@@ -21,8 +21,7 @@
       </div>
       <nav class="tabs" role="tablist" aria-label="Seções">
         <button class="tab is-active" role="tab" aria-selected="true" data-tab="criar">Criar banner</button>
-        <button class="tab" role="tab" aria-selected="false" data-tab="baixar">Baixar prontos</button>
-        <button class="tab" role="tab" aria-selected="false" data-tab="salvos" id="tabSalvos" hidden>Salvos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="salvos" id="tabSalvos" hidden>Banners salvos</button>
       </nav>
       <div class="auth" id="authWidget" hidden></div>
     </div>
@@ -81,23 +80,11 @@
       </div>
     </section>
 
-    <!-- ======================= BAIXAR ======================= -->
-    <section id="panel-baixar" class="panel" role="tabpanel" hidden>
-      <div class="gallery-head">
-        <h1>Banners prontos</h1>
-        <p>Baixe um banner individual em WebP ou um conjunto inteiro em .zip. A opção recomendada de cada assunto fica em destaque.</p>
-      </div>
-      <div id="gallery" class="gallery"></div>
-      <p id="galleryEmpty" class="empty" hidden>
-        Nenhum banner publicado ainda. Adicione arquivos em <code>banners/</code> e liste-os em <code>banners.json</code>.
-      </p>
-    </section>
-
-    <!-- ======================= SALVOS ======================= -->
+    <!-- ======================= BANNERS SALVOS ======================= -->
     <section id="panel-salvos" class="panel" role="tabpanel" hidden>
       <div class="gallery-head">
         <h1>Banners salvos</h1>
-        <p>Banners criados e salvos no projeto, agrupados. Cada um pode remover os que criou; o admin pode remover qualquer um.</p>
+        <p>Baixe banners por categoria ou conjuntos inteiros em .zip. A recomendada de cada categoria fica em destaque. Você remove os que criou; o admin gerencia todos.</p>
       </div>
       <div id="salvos" class="gallery"></div>
       <p id="salvosMsg" class="empty" hidden></p>

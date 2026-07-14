@@ -264,4 +264,6 @@ body.has-modal { overflow: hidden; }
 .modal__box input:focus { outline: none; border-color: var(--blue); }
 .modal__msg { font-size: 12.5px; color: var(--muted); min-height: 18px; margin-top: 10px; }
 .modal__msg.is-err { color: #c0392b; }
+.modal__check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 12px; cursor: pointer; }
+.modal__check input { width: 16px; height: 16px; accent-color: var(--blue); }
 .modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }

@@ -85,6 +85,14 @@
     return getClient().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   }
 
+  // Baixa os bytes (usado para montar o .zip sem depender de CORS de img).
+  function downloadBlob(path) {
+    return getClient().storage.from(BUCKET).download(path).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      return res.data; // Blob
+    });
+  }
+
   function saveBanner(p) {
     if (!currentUser) return Promise.reject(new Error('Faça login para salvar.'));
     var uid = currentUser.id;
@@ -94,7 +102,8 @@
       .then(function (up) {
         if (up.error) throw new Error('Upload: ' + up.error.message);
         return c.from('banners').insert({
-          titulo: p.titulo, grupo: p.grupo || 'Geral', storage_path: path, owner_email: currentUser.email,
+          titulo: p.titulo, grupo: p.grupo || 'Geral', storage_path: path,
+          owner_email: currentUser.email, recomendado: !!p.recomendado && currentIsAdmin,
         }).select().single();
       })
       .then(function (ins) {
@@ -133,6 +142,6 @@
     isEnabled: isEnabled, init: init, onAuth: onAuth, getUser: getUser, isAdmin: isAdmin,
     signIn: signIn, signOut: signOut,
     listBanners: listBanners, saveBanner: saveBanner, deleteBanner: deleteBanner,
-    canDelete: canDelete, publicUrl: publicUrl,
+    canDelete: canDelete, publicUrl: publicUrl, downloadBlob: downloadBlob,
   };
 })(typeof window !== 'undefined' ? window : this);

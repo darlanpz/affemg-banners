@@ -16,7 +16,7 @@
   var $ = function (sel) { return document.querySelector(sel); };
 
   // ---------- Abas ----------
-  var TABS = ['criar', 'baixar', 'salvos'];
+  var TABS = ['criar', 'salvos'];
 
   function activateTab(name) {
     if (TABS.indexOf(name) < 0) name = 'criar';
@@ -32,7 +32,6 @@
       panel.classList.toggle('is-active', on);
       panel.hidden = !on;
     });
-    if (name === 'baixar' && window.AffemgGallery) window.AffemgGallery.ensureLoaded();
     if (name === 'salvos' && window.AffemgSalvos) window.AffemgSalvos.refresh();
   }
 
