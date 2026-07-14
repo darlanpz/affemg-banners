@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Banners AFFEMG</title>
+  <meta name="description" content="Baixe banners prontos ou crie novos banners para o app AFFEMG.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <div class="brand">
+        <img class="brand__mark" src="assets/app-icon.svg" alt="" aria-hidden="true" width="34" height="34">
+        <div>
+          <strong>Banners AFFEMG</strong>
+          <span class="brand__sub">Crie e baixe banners no formato do app</span>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Seções">
+        <button class="tab is-active" role="tab" aria-selected="true" data-tab="criar">Criar banner</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="baixar">Baixar prontos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="salvos" id="tabSalvos" hidden>Salvos</button>
+      </nav>
+      <div class="auth" id="authWidget" hidden></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- ======================= CRIAR ======================= -->
+    <section id="panel-criar" class="panel is-active" role="tabpanel">
+      <div class="creator">
+        <!-- Controles -->
+        <form class="controls" id="controls" autocomplete="off">
+          <fieldset class="field">
+            <legend>1. Imagem de fundo</legend>
+            <label class="dropzone" id="dropzone" tabindex="0">
+              <input type="file" id="fileInput" accept="image/*" hidden>
+              <span class="dropzone__icon" aria-hidden="true">⬆</span>
+              <span class="dropzone__text" id="dropzoneText">
+                Arraste uma imagem aqui ou <u>clique para escolher</u>
+              </span>
+              <span class="dropzone__hint">JPG ou PNG · o recorte usa o centro (1024×640)</span>
+            </label>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>2. Modelo de fundo</legend>
+            <div class="choices" id="variantes"></div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>3. Elemento de marca</legend>
+            <div class="choices choices--elem" id="elementos"></div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>4. Acabamento</legend>
+            <label class="switch">
+              <input type="checkbox" id="tglEscurecer">
+              <span>Escurecer imagem (40%)</span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="tglFooter" checked>
+              <span>Efeito de rodapé (blur)</span>
+            </label>
+          </fieldset>
+        </form>
+
+        <!-- Preview -->
+        <div class="preview-col">
+          <div class="preview" id="preview" aria-label="Pré-visualização do banner"></div>
+          <div class="preview-actions">
+            <button type="button" class="btn btn--primary" id="btnDownload">Baixar WebP</button>
+            <button type="button" class="btn btn--ghost" id="btnSave" hidden>Salvar no projeto</button>
+            <span class="preview-meta">1024 × 640 · WebP</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= BAIXAR ======================= -->
+    <section id="panel-baixar" class="panel" role="tabpanel" hidden>
+      <div class="gallery-head">
+        <h1>Banners prontos</h1>
+        <p>Baixe um banner individual em WebP ou um conjunto inteiro em .zip. A opção recomendada de cada assunto fica em destaque.</p>
+      </div>
+      <div id="gallery" class="gallery"></div>
+      <p id="galleryEmpty" class="empty" hidden>
+        Nenhum banner publicado ainda. Adicione arquivos em <code>banners/</code> e liste-os em <code>banners.json</code>.
+      </p>
+    </section>
+
+    <!-- ======================= SALVOS ======================= -->
+    <section id="panel-salvos" class="panel" role="tabpanel" hidden>
+      <div class="gallery-head">
+        <h1>Banners salvos</h1>
+        <p>Banners criados e salvos no projeto, agrupados. Cada um pode remover os que criou; o admin pode remover qualquer um.</p>
+      </div>
+      <div id="salvos" class="gallery"></div>
+      <p id="salvosMsg" class="empty" hidden></p>
+    </section>
+  </main>
+
+  <footer class="sitefoot wrap">
+    Ferramenta interna · Banners AFFEMG
+  </footer>
+
+  <script src="js/vendor/fflate.min.js"></script>
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/svg-builder.js"></script>
+  <script src="js/webp.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/creator.js"></script>
+  <script src="js/gallery.js"></script>
+  <script src="js/backend-ui.js"></script>
+</body>
+</html>

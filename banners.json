@@ -1,0 +1,118 @@
+{
+  "geradoEm": "2026-07-14T20:01:27.775Z",
+  "secoes": [
+    {
+      "id": "assistencia-social",
+      "titulo": "Assistência Social",
+      "descricao": "",
+      "ordem": 9999,
+      "banners": [
+        {
+          "arquivo": "assistencia-social/ass-social.webp",
+          "titulo": "Ass Social",
+          "recomendado": true
+        }
+      ]
+    },
+    {
+      "id": "convenios",
+      "titulo": "Convenios",
+      "descricao": "",
+      "ordem": 9999,
+      "banners": [
+        {
+          "arquivo": "convenios/convenios-02.webp",
+          "titulo": "Convênios 02",
+          "recomendado": true
+        },
+        {
+          "arquivo": "convenios/convenios-01.webp",
+          "titulo": "Convênios 01",
+          "recomendado": false
+        }
+      ]
+    },
+    {
+      "id": "eventos",
+      "titulo": "Eventos",
+      "descricao": "",
+      "ordem": 9999,
+      "banners": [
+        {
+          "arquivo": "eventos/eventos-01.webp",
+          "titulo": "Eventos 01",
+          "recomendado": true
+        },
+        {
+          "arquivo": "eventos/eventos-02.webp",
+          "titulo": "Eventos 02",
+          "recomendado": false
+        }
+      ]
+    },
+    {
+      "id": "fisco",
+      "titulo": "Fisco",
+      "descricao": "",
+      "ordem": 9999,
+      "banners": [
+        {
+          "arquivo": "fisco/fisco.webp",
+          "titulo": "Fisco",
+          "recomendado": true
+        }
+      ]
+    },
+    {
+      "id": "juridico",
+      "titulo": "Jurídico",
+      "descricao": "",
+      "ordem": 9999,
+      "banners": [
+        {
+          "arquivo": "juridico/juridico.webp",
+          "titulo": "Jurídico",
+          "recomendado": true
+        }
+      ]
+    },
+    {
+      "id": "vila-mares",
+      "titulo": "Vila Mares",
+      "descricao": "",
+      "ordem": 9999,
+      "banners": [
+        {
+          "arquivo": "vila-mares/vila-mares-01.webp",
+          "titulo": "Vila Mares 01",
+          "recomendado": true
+        },
+        {
+          "arquivo": "vila-mares/vila-mares-02.webp",
+          "titulo": "Vila Mares 02",
+          "recomendado": false
+        },
+        {
+          "arquivo": "vila-mares/vila-mares-03.webp",
+          "titulo": "Vila Mares 03",
+          "recomendado": false
+        }
+      ]
+    }
+  ],
+  "sets": [
+    {
+      "id": "recomendados",
+      "titulo": "Recomendados",
+      "descricao": "A opção recomendada de cada assunto.",
+      "banners": [
+        "assistencia-social/ass-social.webp",
+        "convenios/convenios-02.webp",
+        "eventos/eventos-01.webp",
+        "fisco/fisco.webp",
+        "juridico/juridico.webp",
+        "vila-mares/vila-mares-01.webp"
+      ]
+    }
+  ]
+}
