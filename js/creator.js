@@ -72,18 +72,44 @@
     var dz = $('#dropzone');
     var input = $('#fileInput');
     var text = $('#dropzoneText');
+    var preview = $('#preview');
+
+    function setLoading(on) {
+      preview.classList.toggle('is-loading', on);
+      dz.classList.toggle('is-loading', on);
+    }
 
     function handleFile(file) {
       if (!file || !/^image\//.test(file.type)) {
         alert('Selecione um arquivo de imagem (JPG ou PNG).');
         return;
       }
+      setLoading(true);
+      text.innerHTML = 'Carregando <u>' + file.name + '</u>…';
       var reader = new FileReader();
       reader.onload = function (e) {
-        state.imageHref = e.target.result; // data: URI
-        dz.classList.add('has-file');
-        text.innerHTML = 'Imagem carregada: <u>' + file.name + '</u> — clique para trocar';
-        render();
+        var dataURI = e.target.result; // data: URI
+        // Espera a imagem decodificar antes de renderizar, para o preview
+        // não aparecer em branco/estático até a imagem carregar.
+        var img = new Image();
+        img.onload = function () {
+          state.imageHref = dataURI;
+          dz.classList.add('has-file');
+          text.innerHTML = 'Imagem carregada: <u>' + file.name + '</u> — clique para trocar';
+          render();
+          setLoading(false);
+        };
+        img.onerror = function () {
+          setLoading(false);
+          text.innerHTML = 'Arraste uma imagem aqui ou <u>clique para escolher</u>';
+          alert('Não foi possível abrir a imagem. Tente outro arquivo (JPG ou PNG).');
+        };
+        img.src = dataURI;
+      };
+      reader.onerror = function () {
+        setLoading(false);
+        text.innerHTML = 'Arraste uma imagem aqui ou <u>clique para escolher</u>';
+        alert('Falha ao ler o arquivo.');
       };
       reader.readAsDataURL(file);
     }

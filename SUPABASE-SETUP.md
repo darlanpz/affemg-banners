@@ -113,13 +113,44 @@ where email = 'gapz.visual@gmail.com';
 
 > Dica de segurança: como a senha do admin foi comentada no chat, **troque-a** aqui na tela de Users.
 
-## 4. Me enviar 2 valores (para eu integrar)
+## 3b. Atualização das regras (rode este SQL também)
 
-Em **Settings → API**, copie e me mande:
-- **Project URL** (ex.: `https://xxxx.supabase.co`)
-- **anon public** key
+Adiciona o campo **recomendado** e refina as permissões (só admin marca recomendado; só admin edita):
 
-Esses dois são **públicos** e vão em `js/supabase-config.js`. **Nunca** me mande a `service_role`.
+```sql
+alter table public.banners add column if not exists recomendado boolean not null default false;
+
+drop policy if exists "banners: inserir só como dono" on public.banners;
+create policy "banners: inserir como dono"
+  on public.banners for insert to authenticated
+  with check (owner = auth.uid() and (recomendado = false or public.is_admin()));
+
+drop policy if exists "banners: update só admin" on public.banners;
+create policy "banners: update só admin"
+  on public.banners for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+```
+
+## 4. Config (já preenchida)
+
+`js/supabase-config.js` já está com a **Project URL** e a **anon public key** deste projeto.
+(São públicas. A `service_role` nunca vai para o código.)
+
+## 4b. Migrar os banners prontos (uma vez)
+
+Depois de criar o admin (passo 3) e rodar o SQL (passos 2 e 3b), migre os 10 banners prontos atuais
+para o Supabase, na categoria certa e com a recomendada marcada, pertencendo ao admin:
+
+```bash
+# bash
+ADMIN_EMAIL="gapz.visual@gmail.com" ADMIN_PASSWORD="suaSenha" node migrate-curated.js
+```
+```powershell
+# PowerShell
+$env:ADMIN_EMAIL="gapz.visual@gmail.com"; $env:ADMIN_PASSWORD="suaSenha"; node migrate-curated.js
+```
+
+A senha fica só no ambiente durante a execução — **não** é gravada em nenhum arquivo.
 
 ## 5. Impedir a pausa por inatividade (plano grátis)
 
@@ -136,5 +167,14 @@ repositório ficar 60 dias sem nenhum commit; basta um commit de vez em quando, 
 
 ---
 
-Com a URL + anon key em mãos, eu finalizo a integração (tela de login, botão **Salvar**, aba
-**Meus banners** com remover conforme as regras) e testo tudo.
+## Resumo do fluxo (o que fazer, em ordem)
+
+1. Criar o projeto (passo 1) e rodar o SQL (passos **2** e **3b**).
+2. Criar o usuário **admin** e marcá-lo como admin (passo 3).
+3. Rodar `node migrate-curated.js` (passo 4b) para publicar os prontos.
+4. Configurar os secrets do keep-alive no GitHub (passo 5).
+
+Depois disso, no site: a aba **Criar banner** é aberta (monta + baixa WebP local); a aba
+**Banners salvos** exige login e mostra tudo por categoria, com a recomendada em destaque e os
+conjuntos em `.zip`. **Admin** remove/gerencia qualquer banner e marca recomendado; **demais
+usuários** salvam em categorias (existentes ou novas) e removem só os que criaram.

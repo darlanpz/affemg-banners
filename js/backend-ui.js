@@ -133,6 +133,21 @@
     return btn;
   }
 
+  // Faixa de miniaturas (preview) dos banners de um conjunto; clique amplia.
+  function setThumbs(banners) {
+    var strip = el('div', 'setcard__thumbs');
+    banners.forEach(function (b) {
+      var src = BK.publicUrl(b.storage_path);
+      var t = el('button', 'setcard__thumb');
+      t.type = 'button';
+      t.setAttribute('aria-label', 'Ampliar: ' + esc(b.titulo));
+      t.innerHTML = '<img src="' + src + '" alt="' + esc(b.titulo) + '" loading="lazy">';
+      t.addEventListener('click', function () { AffemgLightbox.open(src, b.titulo, safeFile(b.titulo)); });
+      strip.appendChild(t);
+    });
+    return strip;
+  }
+
   // ---------- Card ----------
   function bannerCard(b) {
     var card = el('figure', 'gcard' + (b.recomendado ? ' is-reco' : ''));
@@ -161,6 +176,25 @@
     return card;
   }
 
+  // ---------- Skeleton (enquanto carrega) ----------
+  function skeletonSalvos() {
+    var card =
+      '<figure class="gcard gcard--skel">' +
+        '<div class="skel skel--img"></div>' +
+        '<figcaption class="gcard__body">' +
+          '<span class="skel skel--line"></span>' +
+          '<span class="skel skel--btn"></span>' +
+        '</figcaption>' +
+      '</figure>';
+    var grid = '';
+    for (var i = 0; i < 6; i++) grid += card;
+    return '' +
+      '<section class="gsec" aria-hidden="true">' +
+        '<div class="gsec__head"><span class="skel skel--title"></span></div>' +
+        '<div class="gsec__grid">' + grid + '</div>' +
+      '</section>';
+  }
+
   // ---------- Render da aba ----------
   function isSalvosVisible() { var p = $('#panel-salvos'); return p && !p.hidden; }
 
@@ -184,35 +218,27 @@
 
     var recomendados = banners.filter(function (b) { return b.recomendado; });
 
-    // Bloco de conjuntos para download.
-    var setsWrap = el('div', 'sets');
-    setsWrap.appendChild(el('h2', 'block-title', 'Conjuntos para download'));
-    var setsGrid = el('div', 'sets__grid');
+    // Bloco de conjuntos para download — por enquanto, só "Recomendados" (com preview).
     if (recomendados.length) {
-      var c = el('div', 'setcard');
+      var setsWrap = el('div', 'sets');
+      setsWrap.appendChild(el('h2', 'block-title', 'Conjuntos para download'));
+      var setsGrid = el('div', 'sets__grid');
+      var c = el('div', 'setcard setcard--wide');
       c.appendChild(el('span', 'setcard__name', 'Recomendados'));
       c.appendChild(el('span', 'setcard__desc', 'A opção recomendada de cada categoria.'));
       c.appendChild(el('span', 'setcard__count', recomendados.length + ' banners'));
+      c.appendChild(setThumbs(recomendados));
       c.appendChild(zipButton('recomendados', recomendados, 'Baixar .zip'));
       setsGrid.appendChild(c);
+      setsWrap.appendChild(setsGrid);
+      root.appendChild(setsWrap);
     }
-    order.forEach(function (g) {
-      if (groups[g].length < 1) return;
-      var c = el('div', 'setcard');
-      c.appendChild(el('span', 'setcard__name', g));
-      c.appendChild(el('span', 'setcard__count', groups[g].length + (groups[g].length === 1 ? ' banner' : ' banners')));
-      c.appendChild(zipButton(g, groups[g], 'Baixar .zip'));
-      setsGrid.appendChild(c);
-    });
-    setsWrap.appendChild(setsGrid);
-    root.appendChild(setsWrap);
 
     // Categorias.
     order.forEach(function (g) {
       var wrap = el('section', 'gsec');
       var head = el('div', 'gsec__head');
       head.appendChild(el('h2', 'gsec__title', esc(g)));
-      if (groups[g].length > 1) head.appendChild(zipButton(g, groups[g], 'Baixar todos (' + groups[g].length + ')'));
       wrap.appendChild(head);
       var grid = el('div', 'gsec__grid');
       groups[g].forEach(function (b) { grid.appendChild(bannerCard(b)); });
@@ -228,7 +254,7 @@
       if (!BK || !BK.isEnabled()) return;
       if (!BK.getUser()) { renderSalvos([]); return; }
       if (salvosLoaded) return;
-      var root = $('#salvos'); root.innerHTML = '<p class="empty">Carregando…</p>'; $('#salvosMsg').hidden = true;
+      var root = $('#salvos'); root.innerHTML = skeletonSalvos(); $('#salvosMsg').hidden = true;
       BK.listBanners().then(function (bs) { salvosLoaded = true; cacheBanners = bs; renderSalvos(bs); })
         .catch(function (err) { $('#salvosMsg').hidden = false; $('#salvosMsg').textContent = 'Erro ao carregar: ' + err.message; root.innerHTML = ''; });
     },
