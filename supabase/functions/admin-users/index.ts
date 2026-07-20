@@ -11,6 +11,73 @@
 // nome "admin-users", e cole este arquivo.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+
+const APP_URL = Deno.env.get('APP_URL') || 'https://darlanpz.github.io/affemg-banners/';
+
+// Envia um aviso para todos os admins quando alguém pede acesso. Usa o mesmo
+// SMTP (Zoho) que os e-mails de login, com as credenciais em variáveis da
+// função. É best-effort: se não houver SMTP configurado ou o envio falhar, o
+// pedido continua valendo (o sino de notificações cobre esse caso).
+async function avisaAdmins(emails: string[], nome: string, email: string) {
+  const host = Deno.env.get('SMTP_HOST');
+  const port = Number(Deno.env.get('SMTP_PORT') || '587');
+  const user = Deno.env.get('SMTP_USER');
+  const pass = Deno.env.get('SMTP_PASS');
+  const from = Deno.env.get('SMTP_FROM') || user;
+  if (!host || !user || !pass || !from || !emails.length) return;
+
+  const html =
+    '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"></head>' +
+    '<body style="margin:0;padding:0;background:#f4f7fa;">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fa;padding:24px 12px;"><tr><td align="center">' +
+    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;">' +
+    '<tr><td align="center" style="background:#0060A6;padding:26px 24px;">' +
+    '<img src="' + APP_URL + 'assets/email-logo.png" width="60" height="60" alt="AFFEMG" style="display:block;border:0;">' +
+    '<div style="color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;margin-top:10px;">Banners AFFEMG</div>' +
+    '</td></tr>' +
+    '<tr><td style="padding:32px 32px 6px;font-family:Arial,Helvetica,sans-serif;color:#12242f;">' +
+    '<h1 style="margin:0 0 14px;font-size:20px;">Novo pedido de acesso</h1>' +
+    '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3f4c55;">Uma pessoa pediu acesso &agrave; ferramenta:</p>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;font-size:15px;color:#12242f;">' +
+    '<tr><td style="padding:2px 12px 2px 0;color:#8a97a0;">Nome</td><td style="padding:2px 0;font-weight:bold;">' + escHtml(nome) + '</td></tr>' +
+    '<tr><td style="padding:2px 12px 2px 0;color:#8a97a0;">E-mail</td><td style="padding:2px 0;font-weight:bold;">' + escHtml(email) + '</td></tr>' +
+    '</table>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px;"><tr>' +
+    '<td align="center" bgcolor="#0060A6" style="border-radius:8px;">' +
+    '<a href="' + APP_URL + '#usuarios" target="_blank" style="display:inline-block;padding:13px 28px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#fff;text-decoration:none;border-radius:8px;">Ver na ferramenta</a>' +
+    '</td></tr></table>' +
+    '<p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#8a97a0;">Aprove ou recuse na aba Usu&aacute;rios.</p>' +
+    '</td></tr>' +
+    '<tr><td style="padding:14px 32px 30px;font-family:Arial,Helvetica,sans-serif;">' +
+    '<hr style="border:0;border-top:1px solid #e8edf1;margin:0 0 16px;">' +
+    '<p style="margin:0;font-size:12px;color:#8a97a0;">Voc&ecirc; recebe este aviso porque &eacute; administrador dos Banners AFFEMG.</p>' +
+    '</td></tr></table></td></tr></table></body></html>';
+
+  const client = new SMTPClient({
+    connection: {
+      hostname: host,
+      port,
+      tls: port === 465,               // 465 = TLS direto; 587 = STARTTLS
+      auth: { username: user, password: pass },
+    },
+  });
+  try {
+    await client.send({
+      from: from,
+      to: emails,
+      subject: 'Novo pedido de acesso - Banners AFFEMG',
+      html,
+    });
+  } finally {
+    try { await client.close(); } catch (_e) { /* ignora */ }
+  }
+}
+
+function escHtml(s: string) {
+  return String(s || '').replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -91,6 +158,17 @@ Deno.serve(async (req) => {
         }
         return json({ error: error.message }, 400);
       }
+
+      // Avisa os admins por e-mail. Best-effort: nunca derruba o pedido.
+      try {
+        const { data: admins } = await admin
+          .from('profiles').select('email').eq('is_admin', true);
+        const emails = (admins || []).map((a) => a.email).filter(Boolean) as string[];
+        await avisaAdmins(emails, nome, email);
+      } catch (e) {
+        console.error('Falha ao avisar admins:', (e as Error).message);
+      }
+
       return json({ ok: true });
     }
 

@@ -224,30 +224,14 @@
       return Promise.reject(new Error('Informe um e-mail válido.'));
     }
 
-    // Com captcha configurado, o pedido passa pela Edge Function, que valida o
-    // token e insere com service_role. Assim o token não tem como ser burlado
-    // no cliente. Sem captcha, insere direto (a RLS permite).
-    if (captchaSiteKey()) {
-      if (!p.captchaToken) {
-        return Promise.reject(new Error('Confirme que você não é um robô.'));
-      }
-      return callFn('admin-users', {
-        acao: 'solicitar', nome: nome, email: email, captchaToken: p.captchaToken,
-      }).then(function () { return true; });
+    // O pedido sempre passa pela Edge Function: ela valida o captcha (se
+    // configurado), insere com service_role e avisa os admins por e-mail.
+    if (captchaSiteKey() && !p.captchaToken) {
+      return Promise.reject(new Error('Confirme que você não é um robô.'));
     }
-
-    return getClient().from('solicitacoes_acesso')
-      .insert({ nome: nome, email: email, status: 'pendente' })
-      .then(function (res) {
-        if (res.error) {
-          // Índice único de pendentes: já existe pedido em aberto.
-          if (/duplicate|unique/i.test(res.error.message)) {
-            throw new Error('Já existe um pedido em análise para este e-mail.');
-          }
-          throw new Error(traduzErro(res.error.message));
-        }
-        return true;
-      });
+    return callFn('admin-users', {
+      acao: 'solicitar', nome: nome, email: email, captchaToken: p.captchaToken || '',
+    }).then(function () { return true; });
   }
 
   function listSolicitacoes() {

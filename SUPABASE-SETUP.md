@@ -286,6 +286,29 @@ drop policy if exists "solicitacoes: qualquer um pede" on public.solicitacoes_ac
 
 Isso faz com que pedidos só entrem via função (com captcha), nunca por insert direto.
 
+### 4c. Avisar os admins por e-mail (opcional)
+
+Quando alguém pede acesso, a Edge Function pode mandar um e-mail para **todos os
+admins**. Ela usa o **mesmo SMTP do Zoho** que os e-mails de login, mas como o
+Supabase não expõe esse SMTP para envios avulsos, as credenciais precisam ser
+repetidas como **secrets da função** (são os mesmos valores da tela de SMTP).
+
+Em **Edge Functions → admin-users → Settings → Secrets**, crie:
+
+| Secret | Valor (o mesmo do SMTP do Zoho) |
+|---|---|
+| `SMTP_HOST` | ex.: `smtp.zoho.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | o usuário (ex.: `admin.gapz@darlanpz.com.br`) |
+| `SMTP_PASS` | a senha/App Password |
+| `SMTP_FROM` | o remetente (ex.: `admin.gapz@darlanpz.com.br`) |
+| `APP_URL` | `https://darlanpz.github.io/affemg-banners/` (opcional; é o padrão) |
+
+É best-effort: se esses secrets não existirem ou o envio falhar, o pedido continua
+sendo registrado e aparece no sino de notificações normalmente. O aviso é um extra.
+
+Depois de criar os secrets, **republique a função** (ela também mudou de código).
+
 ### 5. Testar, nesta ordem
 
 1. Saia da sua conta, clique em **Entrar** e depois em **Não tenho acesso**. Envie um
