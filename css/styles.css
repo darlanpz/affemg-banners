@@ -303,6 +303,118 @@ body.has-modal { overflow: hidden; }
 .modal__check input { width: 16px; height: 16px; accent-color: var(--blue); }
 .modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 .modal__hint { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.45; }
+.modal__text { font-size: 14px; color: var(--ink); line-height: 1.5; margin: 4px 0 0; }
+.modal__text.is-err { color: #c0392b; }
+
+/* Botão vermelho sólido, só para confirmar ações destrutivas. */
+.btn--danger-solid { background: #c0392b; color: #fff; border-color: #c0392b; }
+.btn--danger-solid:hover { background: #a5301f; border-color: #a5301f; }
+
+/* Campo de senha com o botão de revelar. */
+.field-pass { position: relative; }
+.field-pass input { padding-right: 42px; }
+.field-pass__eye {
+  position: absolute; top: 0; right: 0; height: 100%; width: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: 0; padding: 0; cursor: pointer; color: var(--muted);
+}
+.field-pass__eye:hover { color: var(--blue); }
+.field-pass__eye .eye-off { opacity: 0; }
+.field-pass__eye.is-on { color: var(--blue); }
+.field-pass__eye.is-on .eye-off { opacity: 1; }
+
+/* ---------- Motion ---------- */
+@keyframes aff-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes aff-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes aff-pop {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes aff-toast-in { from { opacity: 0; transform: translateX(24px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes aff-toast-out { to { opacity: 0; transform: translateX(24px) scale(.97); } }
+
+.modal { animation: aff-fade-in .16s ease-out both; }
+.modal__box { animation: aff-pop .22s cubic-bezier(.2, .8, .3, 1) both; }
+.lightbox { animation: aff-fade-in .16s ease-out both; }
+.lightbox__inner { animation: aff-pop .24s cubic-bezier(.2, .8, .3, 1) both; }
+.panel.is-active { animation: aff-rise .26s ease-out both; }
+.gcard, .setcard, .ucard { animation: aff-rise .3s ease-out both; }
+.gsec { animation: aff-fade-in .3s ease-out both; }
+/* O skeleton já tem o shimmer; não precisa entrar duas vezes. */
+.gcard--skel, .ucard--skel { animation: none; }
+
+.btn, .tab, .choice, .gcard, .ucard, .setcard__thumb, .field-pass__eye {
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease,
+              box-shadow .2s ease, transform .15s ease;
+}
+.gcard:hover, .ucard:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+
+/* ---------- Toasts ---------- */
+.toasts {
+  position: fixed; top: 16px; right: 16px; z-index: 300;
+  display: flex; flex-direction: column; gap: 10px;
+  max-width: min(360px, calc(100vw - 32px)); pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 10px;
+  background: var(--white); color: var(--ink);
+  border: 1px solid var(--line); border-left: 4px solid var(--muted);
+  border-radius: 10px; padding: 12px 12px 12px 13px;
+  box-shadow: 0 6px 24px rgba(18, 36, 47, .16);
+  font-size: 13.5px; line-height: 1.4;
+  animation: aff-toast-in .24s cubic-bezier(.2, .8, .3, 1) both;
+}
+.toast.is-out { animation: aff-toast-out .22s ease-in both; }
+.toast__icon { display: inline-flex; margin-top: 1px; }
+.toast--ok { border-left-color: #1e8e4e; }
+.toast--ok .toast__icon { color: #1e8e4e; }
+.toast--erro { border-left-color: #c0392b; }
+.toast--erro .toast__icon { color: #c0392b; }
+.toast--info { border-left-color: var(--blue); }
+.toast--info .toast__icon { color: var(--blue); }
+.toast__x {
+  background: none; border: 0; cursor: pointer; color: var(--muted);
+  font-size: 19px; line-height: 1; padding: 0 2px;
+}
+.toast__x:hover { color: var(--ink); }
+
+@media (max-width: 560px) {
+  .toasts { top: 10px; right: 10px; left: 10px; max-width: none; }
+}
+
+/* ---------- Camada de carregando ---------- */
+body.has-loading { overflow: hidden; }
+.loading {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(9, 18, 24, .5);
+  animation: aff-fade-in .14s ease-out both;
+}
+.loading__box {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--white); border-radius: var(--radius);
+  padding: 20px 24px; box-shadow: 0 10px 40px rgba(9, 18, 24, .3);
+  font-size: 14.5px; font-weight: 500; color: var(--ink);
+  max-width: min(340px, calc(100vw - 40px));
+  animation: aff-pop .22s cubic-bezier(.2, .8, .3, 1) both;
+}
+.loading__spin {
+  width: 22px; height: 22px; flex: 0 0 auto; border-radius: 50%;
+  border: 2.5px solid var(--blue-050); border-top-color: var(--blue);
+  animation: spin .7s linear infinite;
+}
+
+/* Respeita quem pediu menos animação no sistema. */
+@media (prefers-reduced-motion: reduce) {
+  .modal, .modal__box, .lightbox, .lightbox__inner, .panel.is-active,
+  .gcard, .setcard, .ucard, .gsec, .toast, .toast.is-out, .loading, .loading__box {
+    animation-duration: .01ms; animation-iteration-count: 1;
+  }
+  .gcard:hover, .ucard:hover, .btn:active { transform: none; }
+  .loading__spin { animation-duration: 1.6s; }
+}
 
 /* ---------- Usuários (área do admin) ---------- */
 .gallery-head--row {
@@ -332,7 +444,10 @@ body.has-modal { overflow: hidden; }
   font-size: 11px; font-weight: 700; letter-spacing: .02em;
   padding: 2px 7px; border-radius: 999px;
 }
-.ucard__acts { display: flex; gap: 8px; }
+.ucard__tag--master { background: #fdf3cf; color: #7a5c00; }
+.ucard__tag--eu { background: var(--bg); color: var(--muted); }
+.ucard__acts { display: flex; gap: 8px; align-items: center; }
+.ucard__nota { font-size: 12.5px; color: var(--muted); font-style: italic; }
 .ucard--skel { pointer-events: none; }
 .skel--short { width: 35%; }
 

@@ -21,31 +21,185 @@
     overlay.innerHTML = '<div class="modal__box" role="dialog" aria-modal="true">' + innerHTML + '</div>';
     document.body.appendChild(overlay);
     document.body.classList.add('has-modal');
+    var fechado = false;
+    var aoFechar = [];
     function onEsc(e) { if (e.key === 'Escape') close(); }
     function close() {
+      if (fechado) return;
+      fechado = true;
       overlay.remove();
       document.body.classList.remove('has-modal');
       document.removeEventListener('keydown', onEsc);
+      aoFechar.forEach(function (cb) { try { cb(); } catch (e) {} });
     }
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
     document.addEventListener('keydown', onEsc);
-    return { overlay: overlay, box: overlay.querySelector('.modal__box'), close: close };
+    return {
+      overlay: overlay,
+      box: overlay.querySelector('.modal__box'),
+      close: close,
+      onClose: function (cb) { aoFechar.push(cb); },
+    };
+  }
+
+  // ---------- Confirmação e aviso (no lugar de confirm()/alert()) ----------
+  function acoes(botoes) { return '<div class="modal__actions">' + botoes + '</div>'; }
+
+  function confirmar(opts) {
+    return new Promise(function (resolve) {
+      var m = modal(
+        '<h3 class="modal__title">' + esc(opts.titulo) + '</h3>' +
+        '<p class="modal__text">' + esc(opts.texto).replace(/\n/g, '<br>') + '</p>' +
+        acoes(
+          '<button class="btn btn--ghost" id="cNao">' + esc(opts.cancelar || 'Cancelar') + '</button>' +
+          '<button class="btn ' + (opts.perigo ? 'btn--danger-solid' : 'btn--primary') + '" id="cSim">' +
+          esc(opts.ok || 'Confirmar') + '</button>'
+        )
+      );
+      var respondido = false;
+      function responde(v) { if (respondido) return; respondido = true; m.close(); resolve(v); }
+      m.box.querySelector('#cNao').addEventListener('click', function () { responde(false); });
+      m.box.querySelector('#cSim').addEventListener('click', function () { responde(true); });
+      // Fechar pelo X, pelo Escape ou clicando fora equivale a cancelar.
+      m.onClose(function () { responde(false); });
+      m.box.querySelector('#cSim').focus();
+    });
+  }
+
+  function avisar(opts) {
+    return new Promise(function (resolve) {
+      var m = modal(
+        '<h3 class="modal__title">' + esc(opts.titulo) + '</h3>' +
+        '<p class="modal__text' + (opts.erro ? ' is-err' : '') + '">' +
+          esc(opts.texto).replace(/\n/g, '<br>') + '</p>' +
+        acoes('<button class="btn btn--primary" id="aOk">Entendi</button>')
+      );
+      m.onClose(function () { resolve(); });
+      m.box.querySelector('#aOk').addEventListener('click', m.close);
+      m.box.querySelector('#aOk').focus();
+    });
+  }
+
+  // Campo de senha com botão para revelar o que está sendo digitado.
+  function campoSenha(id, autocomplete) {
+    return '<div class="field-pass">' +
+      '<input type="password" id="' + id + '" autocomplete="' + (autocomplete || 'current-password') + '">' +
+      '<button type="button" class="field-pass__eye" data-eye="' + id + '" aria-label="Mostrar senha" title="Mostrar senha">' +
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
+          '<path class="eye-open" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/>' +
+          '<circle class="eye-open" cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.8"/>' +
+          '<path class="eye-off" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3 3l18 18"/>' +
+        '</svg>' +
+      '</button></div>';
+  }
+
+  // Liga os botões de revelar senha existentes dentro de um modal.
+  function ligarOlhos(box) {
+    box.querySelectorAll('[data-eye]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = box.querySelector('#' + btn.dataset.eye);
+        var mostrando = input.type === 'text';
+        input.type = mostrando ? 'password' : 'text';
+        btn.classList.toggle('is-on', !mostrando);
+        var rot = mostrando ? 'Mostrar senha' : 'Ocultar senha';
+        btn.setAttribute('aria-label', rot);
+        btn.setAttribute('title', rot);
+        input.focus();
+      });
+    });
+  }
+
+  // ---------- Avisos rápidos no canto (toasts) ----------
+  var TOAST_MS = 4000;
+
+  function toastArea() {
+    var area = document.getElementById('toasts');
+    if (!area) {
+      area = el('div', 'toasts');
+      area.id = 'toasts';
+      area.setAttribute('role', 'status');
+      area.setAttribute('aria-live', 'polite');
+      document.body.appendChild(area);
+    }
+    return area;
+  }
+
+  var ICONES = {
+    ok: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4 12.5l5 5L20 6.5"/></svg>',
+    erro: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 6.5v7M12 17.4v.2"/></svg>',
+    info: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 10.5v7M12 6.6v.2"/></svg>',
+  };
+
+  function toast(texto, tipo) {
+    tipo = ICONES[tipo] ? tipo : 'info';
+    var t = el('div', 'toast toast--' + tipo);
+    t.innerHTML =
+      '<span class="toast__icon">' + ICONES[tipo] + '</span>' +
+      '<span class="toast__text">' + esc(texto) + '</span>' +
+      '<button type="button" class="toast__x" aria-label="Fechar">&times;</button>';
+    toastArea().appendChild(t);
+
+    var saindo = false;
+    var timer = setTimeout(sai, TOAST_MS);
+    function sai() {
+      if (saindo) return;
+      saindo = true;
+      clearTimeout(timer);
+      t.classList.add('is-out');
+      // Remove depois da animação; o fallback cobre quem tem motion desligado.
+      var fim = setTimeout(function () { t.remove(); }, 400);
+      t.addEventListener('animationend', function () { clearTimeout(fim); t.remove(); });
+    }
+    t.querySelector('.toast__x').addEventListener('click', sai);
+    // Passar o mouse segura o aviso na tela.
+    t.addEventListener('mouseenter', function () { clearTimeout(timer); });
+    t.addEventListener('mouseleave', function () { timer = setTimeout(sai, 1500); });
+    return { fecha: sai };
+  }
+
+  // ---------- Camada de carregando (para o que não tem skeleton) ----------
+  function carregando(texto) {
+    var ov = el('div', 'loading');
+    ov.innerHTML =
+      '<div class="loading__box" role="status" aria-live="assertive">' +
+        '<span class="loading__spin" aria-hidden="true"></span>' +
+        '<span class="loading__text">' + esc(texto || 'Carregando…') + '</span>' +
+      '</div>';
+    document.body.appendChild(ov);
+    document.body.classList.add('has-loading');
+    var fechado = false;
+    return {
+      texto: function (novo) { ov.querySelector('.loading__text').textContent = novo; },
+      fecha: function () {
+        if (fechado) return;
+        fechado = true;
+        ov.remove();
+        if (!document.querySelector('.loading')) document.body.classList.remove('has-loading');
+      },
+    };
   }
 
   // Compartilhado com admin-ui.js, para não duplicar os helpers.
-  window.AffemgUI = { modal: modal, el: el, esc: esc, openLogin: function (cb) { openLogin(cb); } };
+  window.AffemgUI = {
+    modal: modal, el: el, esc: esc,
+    confirmar: confirmar, avisar: avisar,
+    toast: toast, carregando: carregando,
+    campoSenha: campoSenha, ligarOlhos: ligarOlhos,
+    openLogin: function (cb) { openLogin(cb); },
+  };
 
   // ---------- Login ----------
   function openLogin(onDone) {
     var m = modal(
       '<h3 class="modal__title">Entrar</h3>' +
       '<label class="modal__label">E-mail</label><input type="email" id="mEmail" autocomplete="username">' +
-      '<label class="modal__label">Senha</label><input type="password" id="mPass" autocomplete="current-password">' +
+      '<label class="modal__label">Senha</label>' + campoSenha('mPass', 'current-password') +
       '<div class="modal__msg" id="mMsg"></div>' +
       '<div class="modal__actions"><button class="btn btn--ghost" id="mCancel">Cancelar</button>' +
       '<button class="btn btn--primary" id="mLogin">Entrar</button></div>'
     );
     var email = m.box.querySelector('#mEmail'); email.focus();
+    ligarOlhos(m.box);
     m.box.querySelector('#mCancel').addEventListener('click', m.close);
     function submit() {
       var msg = m.box.querySelector('#mMsg'); msg.textContent = 'Entrando…'; msg.className = 'modal__msg';
@@ -83,7 +237,10 @@
   }
 
   function openSave() {
-    if (!window.AffemgCreator || !AffemgCreator.hasImage()) { alert('Envie uma imagem e monte o banner antes de salvar.'); return; }
+    if (!window.AffemgCreator || !AffemgCreator.hasImage()) {
+      toast('Envie uma imagem e monte o banner antes de salvar.', 'info');
+      return;
+    }
     if (!BK.getUser()) { openLogin(function () { openSave(); }); return; }
     var admin = BK.isAdmin();
     var m = modal(
@@ -107,12 +264,21 @@
       var grupo = m.box.querySelector('#sGrupo').value.trim() || 'Geral';
       var reco = admin && m.box.querySelector('#sReco').checked;
       if (!nome) { return; }
-      var msg = m.box.querySelector('#sMsg'); msg.textContent = 'Gerando e salvando…'; msg.className = 'modal__msg';
+      var msg = m.box.querySelector('#sMsg'); msg.textContent = ''; msg.className = 'modal__msg';
       var btn = m.box.querySelector('#sSave'); btn.disabled = true;
+      var load = carregando('Gerando o WebP…');
       window.AffemgWebp.render(AffemgCreator.currentSVG(), { quality: 0.92 })
-        .then(function (blob) { return BK.saveBanner({ titulo: nome, grupo: grupo, recomendado: reco, blob: blob }); })
-        .then(function () { m.close(); AffemgSalvos.invalidate(); if (isSalvosVisible()) AffemgSalvos.refresh(); alert('Banner salvo em “' + grupo + '”.'); })
-        .catch(function (err) { msg.textContent = 'Falha: ' + err.message; msg.className = 'modal__msg is-err'; btn.disabled = false; });
+        .then(function (blob) { load.texto('Salvando no projeto…'); return BK.saveBanner({ titulo: nome, grupo: grupo, recomendado: reco, blob: blob }); })
+        .then(function () {
+          load.fecha(); m.close();
+          AffemgSalvos.invalidate(); if (isSalvosVisible()) AffemgSalvos.refresh();
+          toast('Banner salvo em “' + grupo + '”.', 'ok');
+        })
+        .catch(function (err) {
+          load.fecha();
+          msg.textContent = 'Falha: ' + err.message; msg.className = 'modal__msg is-err';
+          btn.disabled = false;
+        });
     });
   }
 
@@ -134,9 +300,11 @@
     btn.type = 'button';
     btn.addEventListener('click', function () {
       var label = btn.textContent; btn.disabled = true; btn.textContent = 'Compactando…';
+      var load = carregando('Compactando ' + banners.length + ' banners…');
       AffemgZip.download(nome, zipEntries(banners))
-        .catch(function (err) { alert('Falha ao gerar o .zip: ' + err.message); })
-        .then(function () { btn.disabled = false; btn.textContent = label; });
+        .then(function () { toast('Download do .zip iniciado.', 'ok'); })
+        .catch(function (err) { toast('Falha ao gerar o .zip: ' + err.message, 'erro'); })
+        .then(function () { load.fecha(); btn.disabled = false; btn.textContent = label; });
     });
     return btn;
   }
@@ -173,13 +341,32 @@
       '</figcaption>';
     card.querySelector('.gcard__imgbtn').addEventListener('click', function () { AffemgLightbox.open(src, b.titulo, safeFile(b.titulo)); });
     var dl = card.querySelector('[data-dl]');
-    dl.addEventListener('click', function () { dl.disabled = true; downloadOne(b).catch(function (e) { alert('Falha: ' + e.message); }).then(function () { dl.disabled = false; }); });
+    dl.addEventListener('click', function () {
+      dl.disabled = true;
+      var load = carregando('Preparando o download…');
+      downloadOne(b)
+        .catch(function (e) { toast('Falha ao baixar: ' + e.message, 'erro'); })
+        .then(function () { load.fecha(); dl.disabled = false; });
+    });
     var del = card.querySelector('[data-del]');
     if (del) del.addEventListener('click', function () {
-      if (!confirm('Remover "' + b.titulo + '"? Isso apaga para todos.')) return;
-      del.disabled = true; del.textContent = 'Removendo…';
-      BK.deleteBanner(b).then(function () { AffemgSalvos.invalidate(); AffemgSalvos.refresh(); })
-        .catch(function (err) { alert('Falha ao remover: ' + err.message); del.disabled = false; del.textContent = 'Remover'; });
+      confirmar({
+        titulo: 'Remover banner',
+        texto: 'O banner “' + b.titulo + '” será apagado para todos os usuários. Não dá para desfazer.',
+        ok: 'Remover', perigo: true,
+      }).then(function (sim) {
+        if (!sim) return;
+        del.disabled = true; del.textContent = 'Removendo…';
+        BK.deleteBanner(b)
+          .then(function () {
+            toast('Banner “' + b.titulo + '” removido.', 'ok');
+            AffemgSalvos.invalidate(); AffemgSalvos.refresh();
+          })
+          .catch(function (err) {
+            toast('Falha ao remover: ' + err.message, 'erro');
+            del.disabled = false; del.textContent = 'Remover';
+          });
+      });
     });
     return card;
   }

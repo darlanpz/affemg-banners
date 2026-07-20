@@ -187,6 +187,42 @@ revoke all on function public.transferir_banners(uuid, uuid) from public, anon, 
 
 O `revoke` no fim é importante: só a Edge Function (que usa `service_role`) pode chamar essa função.
 
+## 3e. Hierarquia de admins (rode este SQL também)
+
+Marca explicitamente o **admin master**, para o banco não depender de heurística
+(antes ele era deduzido como "o admin mais antigo", o que é frágil).
+
+Regras que este bloco implementa:
+- Todo admin **vê** os outros admins, mas **não** pode editar nem remover um admin.
+- Só o **master** edita e remove admins.
+- O **master continua invisível** para todos os outros, inclusive para outros admins.
+
+```sql
+alter table public.profiles add column if not exists is_master boolean not null default false;
+
+-- marque aqui o seu usuário (e garanta que ele é admin)
+update public.profiles
+   set is_master = true, is_admin = true
+ where email = 'gapz.visual@gmail.com';
+
+create or replace function public.is_master()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select is_master from public.profiles where id = auth.uid()), false);
+$$;
+
+-- Leitura: cada um se vê; admins veem todo mundo, menos o master.
+drop policy if exists "profiles: leitura restrita" on public.profiles;
+create policy "profiles: leitura restrita"
+  on public.profiles for select to authenticated
+  using (id = auth.uid() or (public.is_admin() and is_master = false));
+```
+
+Confira se marcou certo (tem que voltar exatamente uma linha):
+
+```sql
+select email, is_admin, is_master from public.profiles where is_master;
+```
+
 ## 3d. Publicar a Edge Function `admin-users`
 
 Criar e remover contas exige a chave **`service_role`**, que ignora todas as regras de RLS e por

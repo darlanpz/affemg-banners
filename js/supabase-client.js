@@ -15,6 +15,7 @@
   var client = null;
   var currentUser = null;
   var currentIsAdmin = false;
+  var currentIsMaster = false;
   var authListeners = [];
 
   function isEnabled() {
@@ -29,15 +30,17 @@
   function notify() { authListeners.forEach(function (cb) { try { cb(currentUser, currentIsAdmin); } catch (e) {} }); }
 
   function loadIsAdmin() {
-    if (!currentUser) { currentIsAdmin = false; return Promise.resolve(false); }
-    return getClient().from('profiles').select('is_admin').eq('id', currentUser.id).maybeSingle()
+    if (!currentUser) { currentIsAdmin = false; currentIsMaster = false; return Promise.resolve(false); }
+    var ehMasterPeloEmail = !!(CFG.adminEmail && currentUser.email === CFG.adminEmail);
+    return getClient().from('profiles').select('is_admin, is_master').eq('id', currentUser.id).maybeSingle()
       .then(function (res) {
-        currentIsAdmin = !!(res.data && res.data.is_admin) ||
-          (CFG.adminEmail && currentUser.email === CFG.adminEmail);
+        currentIsMaster = !!(res.data && res.data.is_master) || ehMasterPeloEmail;
+        currentIsAdmin = !!(res.data && res.data.is_admin) || currentIsMaster;
         return currentIsAdmin;
       })
       .catch(function () {
-        currentIsAdmin = !!(CFG.adminEmail && currentUser.email === CFG.adminEmail);
+        currentIsMaster = ehMasterPeloEmail;
+        currentIsAdmin = ehMasterPeloEmail;
         return currentIsAdmin;
       });
   }
@@ -59,6 +62,7 @@
   function onAuth(cb) { authListeners.push(cb); return function () { authListeners = authListeners.filter(function (f) { return f !== cb; }); }; }
   function getUser() { return currentUser; }
   function isAdmin() { return currentIsAdmin; }
+  function isMaster() { return currentIsMaster; }
 
   function signIn(email, password) {
     return getClient().auth.signInWithPassword({ email: email, password: password })
@@ -71,7 +75,7 @@
 
   function signOut() {
     return getClient().auth.signOut().then(function () {
-      currentUser = null; currentIsAdmin = false; notify();
+      currentUser = null; currentIsAdmin = false; currentIsMaster = false; notify();
     });
   }
 
@@ -156,7 +160,7 @@
 
   function listUsers() {
     return getClient().from('profiles')
-      .select('id, email, nome, is_admin, created_at')
+      .select('id, email, nome, is_admin, is_master, created_at')
       .order('nome', { ascending: true })
       .then(function (res) {
         if (res.error) throw new Error(res.error.message);
@@ -170,14 +174,36 @@
     });
   }
 
+  // senha vazia = mantém a atual
+  function updateUser(p) {
+    return callFn('admin-users', {
+      acao: 'update', id: p.id, nome: p.nome, email: p.email, senha: p.senha || '',
+    });
+  }
+
   function deleteUser(id) {
     return callFn('admin-users', { acao: 'delete', id: id });
   }
 
-  // Só para a UI decidir se mostra o botão. A regra real está na Edge Function.
+  // Regra pura (sem estado global) de quem gerencia quem, para poder ser testada:
+  //   eu    = { id, isAdmin, isMaster }
+  //   alvo  = linha de profiles
+  // Admin comum mexe só em quem não é admin; o master mexe em todos; ninguém
+  // mexe em si mesmo por aqui. A regra real, que vale, está na Edge Function.
+  function podeGerenciar(eu, alvo) {
+    if (!eu || !eu.isAdmin || !alvo) return false;
+    if (alvo.id === eu.id) return false;
+    if (alvo.is_admin || alvo.is_master) return !!eu.isMaster;
+    return true;
+  }
+
+  // Só para a UI decidir se mostra os botões.
   function canManageUser(profile) {
-    if (!currentUser || !currentIsAdmin) return false;
-    return !profile.is_admin && profile.id !== currentUser.id;
+    if (!currentUser) return false;
+    return podeGerenciar(
+      { id: currentUser.id, isAdmin: currentIsAdmin, isMaster: currentIsMaster },
+      profile
+    );
   }
 
   function traduzErro(msg) {
@@ -194,10 +220,11 @@
 
   global.AffemgBackend = {
     isEnabled: isEnabled, init: init, onAuth: onAuth, getUser: getUser, isAdmin: isAdmin,
+    isMaster: isMaster,
     signIn: signIn, signOut: signOut,
     listBanners: listBanners, saveBanner: saveBanner, deleteBanner: deleteBanner,
     canDelete: canDelete, publicUrl: publicUrl, downloadBlob: downloadBlob,
-    listUsers: listUsers, createUser: createUser, deleteUser: deleteUser,
-    canManageUser: canManageUser,
+    listUsers: listUsers, createUser: createUser, updateUser: updateUser, deleteUser: deleteUser,
+    canManageUser: canManageUser, podeGerenciar: podeGerenciar,
   };
 })(typeof window !== 'undefined' ? window : this);

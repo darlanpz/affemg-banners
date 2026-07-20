@@ -58,14 +58,32 @@ Deno.serve(async (req) => {
     // 2. É admin mesmo? Conferido no banco, com service_role, ignorando a RLS.
     const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
     const { data: callerProfile } = await admin
-      .from('profiles').select('is_admin').eq('id', caller.id).maybeSingle();
+      .from('profiles').select('is_admin, is_master').eq('id', caller.id).maybeSingle();
 
     if (!callerProfile?.is_admin) {
       return json({ error: 'Apenas administradores podem gerenciar usuários.' }, 403);
     }
+    const souMaster = !!callerProfile.is_master;
 
     const body = await req.json().catch(() => ({}));
     const acao = body.acao;
+
+    // Quem pode mexer em quem: admin comum só mexe em não-admin; o master mexe
+    // em todos. Vale tanto para editar quanto para remover.
+    async function carregarAlvo(id: string) {
+      const { data } = await admin
+        .from('profiles').select('id, email, is_admin, is_master').eq('id', id).maybeSingle();
+      return data;
+    }
+    function barrar(alvo: { is_admin: boolean; is_master: boolean }, verbo: string) {
+      if (alvo.is_master && !souMaster) {
+        return `Não é possível ${verbo} este usuário.`;
+      }
+      if (alvo.is_admin && !souMaster) {
+        return `Apenas o administrador master pode ${verbo} outro administrador.`;
+      }
+      return null;
+    }
 
     // ---------- criar ----------
     if (acao === 'create') {
@@ -88,26 +106,57 @@ Deno.serve(async (req) => {
       return json({ ok: true, id: data.user?.id });
     }
 
+    // ---------- editar ----------
+    if (acao === 'update') {
+      const id = String(body.id || '');
+      if (!id) return json({ error: 'Usuário não informado.' }, 400);
+
+      const alvo = await carregarAlvo(id);
+      if (!alvo) return json({ error: 'Usuário não encontrado.' }, 404);
+      const impedimento = barrar(alvo, 'editar');
+      if (impedimento) return json({ error: impedimento }, 403);
+
+      const nome = String(body.nome || '').trim();
+      const email = String(body.email || '').trim().toLowerCase();
+      const senha = String(body.senha || ''); // vazio = não mexe na senha
+
+      if (!nome) return json({ error: 'Informe o nome.' }, 400);
+      if (!email) return json({ error: 'Informe o e-mail.' }, 400);
+      if (senha && senha.length < 6) {
+        return json({ error: 'A senha precisa ter pelo menos 6 caracteres.' }, 400);
+      }
+
+      const patch: Record<string, unknown> = { user_metadata: { nome } };
+      if (email !== alvo.email) { patch.email = email; patch.email_confirm = true; }
+      if (senha) patch.password = senha;
+
+      const { error } = await admin.auth.admin.updateUserById(id, patch);
+      if (error) return json({ error: traduzErro(error.message) }, 400);
+
+      // O trigger só roda na criação, então o profile é atualizado aqui.
+      const { error: pErr } = await admin
+        .from('profiles').update({ nome, email }).eq('id', id);
+      if (pErr) return json({ error: pErr.message }, 500);
+
+      return json({ ok: true });
+    }
+
     // ---------- remover ----------
     if (acao === 'delete') {
       const id = String(body.id || '');
       if (!id) return json({ error: 'Usuário não informado.' }, 400);
       if (id === caller.id) return json({ error: 'Você não pode remover a si mesmo.' }, 400);
 
-      const { data: alvo } = await admin
-        .from('profiles').select('id, email, is_admin').eq('id', id).maybeSingle();
-
+      const alvo = await carregarAlvo(id);
       if (!alvo) return json({ error: 'Usuário não encontrado.' }, 404);
-      if (alvo.is_admin) {
-        return json({ error: 'Não é possível remover um administrador.' }, 403);
-      }
+      const impedimento = barrar(alvo, 'remover');
+      if (impedimento) return json({ error: impedimento }, 403);
 
-      // Destino dos banners: o admin mais antigo (o master). Se não achar, o próprio
+      // Destino dos banners: o admin master. Se não houver um marcado, o próprio
       // admin que está removendo. Precisa vir ANTES do delete, porque a FK de
       // banners.owner é "on delete cascade" e levaria os banners junto.
       const { data: masters } = await admin
-        .from('profiles').select('id').eq('is_admin', true)
-        .order('created_at', { ascending: true }).limit(1);
+        .from('profiles').select('id').eq('is_master', true).limit(1);
       const destino = masters?.[0]?.id || caller.id;
 
       const { error: transferErr } = await admin

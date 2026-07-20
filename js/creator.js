@@ -15,6 +15,13 @@
 
   var $ = function (sel) { return document.querySelector(sel); };
 
+  // Avisos em modal (mesmo visual do resto). O alert() fica só como rede de
+  // segurança, caso o backend-ui não tenha carregado.
+  function aviso(titulo, texto) {
+    if (window.AffemgUI && AffemgUI.toast) return AffemgUI.toast(titulo + ': ' + texto, 'erro');
+    alert(titulo + ': ' + texto);
+  }
+
   // ---------- Abas ----------
   var TABS = ['criar', 'salvos', 'usuarios'];
 
@@ -89,7 +96,7 @@
 
     function handleFile(file) {
       if (!file || !/^image\//.test(file.type)) {
-        alert('Selecione um arquivo de imagem (JPG ou PNG).');
+        aviso('Arquivo inválido', 'Selecione um arquivo de imagem (JPG ou PNG).');
         return;
       }
       setLoading(true);
@@ -110,14 +117,14 @@
         img.onerror = function () {
           setLoading(false);
           text.innerHTML = 'Arraste uma imagem aqui ou <u>clique para escolher</u>';
-          alert('Não foi possível abrir a imagem. Tente outro arquivo (JPG ou PNG).');
+          aviso('Não foi possível abrir a imagem', 'Tente outro arquivo (JPG ou PNG).');
         };
         img.src = dataURI;
       };
       reader.onerror = function () {
         setLoading(false);
         text.innerHTML = 'Arraste uma imagem aqui ou <u>clique para escolher</u>';
-        alert('Falha ao ler o arquivo.');
+        aviso('Falha ao ler o arquivo', 'Tente novamente ou escolha outro arquivo.');
       };
       reader.readAsDataURL(file);
     }
@@ -157,6 +164,8 @@
     btn.disabled = true;
     var label = btn.textContent;
     btn.textContent = 'Gerando…';
+    var load = window.AffemgUI && AffemgUI.carregando
+      ? AffemgUI.carregando('Gerando o WebP…') : { fecha: function () {} };
     window.AffemgWebp.render(svg, { quality: 0.92 })
       .then(function (blob) {
         var url = URL.createObjectURL(blob);
@@ -167,9 +176,10 @@
         a.click();
         document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        if (window.AffemgUI) AffemgUI.toast('Banner gerado. O download já começou.', 'ok');
       })
-      .catch(function (err) { alert('Não foi possível gerar o WebP: ' + err.message); })
-      .then(function () { btn.textContent = label; btn.disabled = !state.imageHref; });
+      .catch(function (err) { aviso('Não foi possível gerar o WebP', err.message); })
+      .then(function () { load.fecha(); btn.textContent = label; btn.disabled = !state.imageHref; });
   }
 
   // Exposto para o backend-ui (botão Salvar) usar o estado atual do banner.
