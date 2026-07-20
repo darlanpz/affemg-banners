@@ -19,5 +19,5 @@ window.AFFEMG_SUPABASE = {
   // Site key é PÚBLICA. A secret key vai como variável da Edge Function
   // (TURNSTILE_SECRET_KEY), nunca aqui. Enquanto vazio, o formulário funciona
   // sem captcha. Ver SUPABASE-SETUP.md.
-  turnstileSiteKey: '',
+  turnstileSiteKey: '0x4AAAAAAD6BGK3DcH1WASau',
 };
