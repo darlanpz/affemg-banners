@@ -16,10 +16,14 @@
   var $ = function (sel) { return document.querySelector(sel); };
 
   // ---------- Abas ----------
-  var TABS = ['criar', 'salvos'];
+  var TABS = ['criar', 'salvos', 'usuarios'];
 
   function activateTab(name) {
     if (TABS.indexOf(name) < 0) name = 'criar';
+    // Abas ocultas (ex.: "Usuários" para quem não é admin) não podem ser abertas
+    // nem por link direto no hash.
+    var btn = document.querySelector('.tab[data-tab="' + name + '"]');
+    if (btn && btn.hidden) name = 'criar';
     document.querySelectorAll('.tab').forEach(function (t) {
       var active = t.dataset.tab === name;
       t.classList.toggle('is-active', active);
@@ -33,7 +37,11 @@
       panel.hidden = !on;
     });
     if (name === 'salvos' && window.AffemgSalvos) window.AffemgSalvos.refresh();
+    if (name === 'usuarios' && window.AffemgUsuarios) window.AffemgUsuarios.refresh();
   }
+
+  // Exposto para o admin-ui tirar o usuário da aba "Usuários" ao deslogar.
+  window.AffemgTabs = { activate: activateTab };
 
   function initTabs() {
     document.querySelectorAll('.tab').forEach(function (tab) {

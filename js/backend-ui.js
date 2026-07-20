@@ -21,11 +21,19 @@
     overlay.innerHTML = '<div class="modal__box" role="dialog" aria-modal="true">' + innerHTML + '</div>';
     document.body.appendChild(overlay);
     document.body.classList.add('has-modal');
-    function close() { overlay.remove(); document.body.classList.remove('has-modal'); }
+    function onEsc(e) { if (e.key === 'Escape') close(); }
+    function close() {
+      overlay.remove();
+      document.body.classList.remove('has-modal');
+      document.removeEventListener('keydown', onEsc);
+    }
     overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
-    document.addEventListener('keydown', function onEsc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); } });
+    document.addEventListener('keydown', onEsc);
     return { overlay: overlay, box: overlay.querySelector('.modal__box'), close: close };
   }
+
+  // Compartilhado com admin-ui.js, para não duplicar os helpers.
+  window.AffemgUI = { modal: modal, el: el, esc: esc, openLogin: function (cb) { openLogin(cb); } };
 
   // ---------- Login ----------
   function openLogin(onDone) {

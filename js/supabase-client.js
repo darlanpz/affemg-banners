@@ -132,9 +132,63 @@
       .then(function () { return true; });
   }
 
+  // ---------- Usuários (área do admin) ----------
+  // A listagem lê profiles direto: quem filtra é a RLS, então o admin master
+  // some da resposta para os demais. Criar e remover exigem service_role e por
+  // isso passam pela Edge Function "admin-users".
+  function callFn(nome, payload) {
+    return getClient().functions.invoke(nome, { body: payload }).then(function (res) {
+      // Erros HTTP vêm em res.error com o corpo dentro de context.
+      if (res.error) {
+        var ctx = res.error.context;
+        if (ctx && typeof ctx.json === 'function') {
+          return ctx.json().then(
+            function (b) { throw new Error(traduzErro((b && b.error) || res.error.message)); },
+            function () { throw new Error(traduzErro(res.error.message)); }
+          );
+        }
+        throw new Error(traduzErro(res.error.message));
+      }
+      if (res.data && res.data.error) throw new Error(traduzErro(res.data.error));
+      return res.data;
+    });
+  }
+
+  function listUsers() {
+    return getClient().from('profiles')
+      .select('id, email, nome, is_admin, created_at')
+      .order('nome', { ascending: true })
+      .then(function (res) {
+        if (res.error) throw new Error(res.error.message);
+        return res.data || [];
+      });
+  }
+
+  function createUser(p) {
+    return callFn('admin-users', {
+      acao: 'create', nome: p.nome, email: p.email, senha: p.senha,
+    });
+  }
+
+  function deleteUser(id) {
+    return callFn('admin-users', { acao: 'delete', id: id });
+  }
+
+  // Só para a UI decidir se mostra o botão. A regra real está na Edge Function.
+  function canManageUser(profile) {
+    if (!currentUser || !currentIsAdmin) return false;
+    return !profile.is_admin && profile.id !== currentUser.id;
+  }
+
   function traduzErro(msg) {
     if (/invalid login credentials/i.test(msg)) return 'E-mail ou senha incorretos.';
     if (/email not confirmed/i.test(msg)) return 'E-mail ainda não confirmado.';
+    if (/failed to (send a )?request|fetch|networkerror/i.test(msg)) {
+      return 'Não foi possível falar com o servidor. Verifique a conexão e tente de novo.';
+    }
+    if (/function not found|404/i.test(msg)) {
+      return 'A função "admin-users" ainda não foi publicada no Supabase.';
+    }
     return msg;
   }
 
@@ -143,5 +197,7 @@
     signIn: signIn, signOut: signOut,
     listBanners: listBanners, saveBanner: saveBanner, deleteBanner: deleteBanner,
     canDelete: canDelete, publicUrl: publicUrl, downloadBlob: downloadBlob,
+    listUsers: listUsers, createUser: createUser, deleteUser: deleteUser,
+    canManageUser: canManageUser,
   };
 })(typeof window !== 'undefined' ? window : this);

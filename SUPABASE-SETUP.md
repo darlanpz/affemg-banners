@@ -9,6 +9,12 @@ Regras de permissão implementadas:
 - **Demais usuários**: podem remover **apenas os banners que eles criaram**.
 - Todos os usuários logados **veem** todos os banners salvos (compartilhados).
 
+Gerenciamento de usuários (aba **Usuários**, só para admins):
+- Admins veem os usuários comuns, cadastram novos (nome, e-mail e senha) e removem.
+- Admins **não** podem remover nem editar outros admins.
+- O admin master **não aparece** na lista para ninguém além dele mesmo.
+- Remover um usuário **não apaga** os banners dele: a posse passa para o admin.
+
 ---
 
 ## 1. Criar o projeto
@@ -131,6 +137,80 @@ create policy "banners: update só admin"
   using (public.is_admin()) with check (public.is_admin());
 ```
 
+## 3c. Área de usuários (rode este SQL também)
+
+Adiciona o campo **nome**, fecha a leitura da tabela `profiles` e cria a função que preserva os
+banners de quem for removido.
+
+```sql
+-- ========== NOME DO USUÁRIO ==========
+alter table public.profiles add column if not exists nome text;
+update public.profiles set nome = email where nome is null;
+
+-- o nome vem do cadastro feito pela ferramenta (user_metadata.nome);
+-- se não vier, assume o e-mail
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, nome)
+  values (new.id, new.email, coalesce(nullif(new.raw_user_meta_data->>'nome', ''), new.email))
+  on conflict (id) do nothing;
+  return new;
+end; $$;
+
+-- ========== QUEM VÊ QUEM ==========
+-- Antes: qualquer logado lia a tabela inteira (inclusive o admin master).
+-- Agora: cada um vê a si mesmo, e admins veem adicionalmente os não-admins.
+drop policy if exists "profiles legíveis por autenticados" on public.profiles;
+drop policy if exists "profiles: leitura restrita" on public.profiles;
+create policy "profiles: leitura restrita"
+  on public.profiles for select to authenticated
+  using (id = auth.uid() or (public.is_admin() and is_admin = false));
+
+-- ========== PRESERVAR OS BANNERS AO REMOVER ==========
+-- banners.owner é "on delete cascade", então apagar o usuário apagaria os banners.
+-- Esta função transfere a posse antes, e é chamada pela Edge Function admin-users.
+create or replace function public.transferir_banners(de uuid, para uuid)
+returns integer language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  update public.banners
+     set owner = para,
+         owner_email = (select email from public.profiles where id = para)
+   where owner = de;
+  get diagnostics n = row_count;
+  return n;
+end; $$;
+
+revoke all on function public.transferir_banners(uuid, uuid) from public, anon, authenticated;
+```
+
+O `revoke` no fim é importante: só a Edge Function (que usa `service_role`) pode chamar essa função.
+
+## 3d. Publicar a Edge Function `admin-users`
+
+Criar e remover contas exige a chave **`service_role`**, que ignora todas as regras de RLS e por
+isso **nunca** pode ficar no site. Essas duas operações rodam numa Edge Function.
+
+1. No painel: **Edge Functions → Deploy a new function**.
+2. Nome exato: **`admin-users`**.
+3. Cole o conteúdo de `supabase/functions/admin-users/index.ts` deste repositório e publique.
+
+Não é preciso configurar nenhum secret: o Supabase já injeta `SUPABASE_URL`, `SUPABASE_ANON_KEY`
+e `SUPABASE_SERVICE_ROLE_KEY` nas Edge Functions.
+
+**Teste antes de liberar para a cliente**, nesta ordem:
+
+1. Logado como um usuário **comum**, abra o console do navegador e rode:
+   ```js
+   await AffemgBackend.createUser({ nome: 'x', email: 'x@x.com', senha: '123456' })
+   ```
+   Tem que falhar com "Apenas administradores podem gerenciar usuários." Se criar o usuário,
+   **pare tudo**: a checagem de admin não está funcionando.
+2. Logado como admin, cadastre um usuário de teste pela aba **Usuários** e confirme o login dele.
+3. Com esse usuário de teste, salve um banner. Depois, como admin, remova o usuário e confirme que
+   **o banner continua na galeria**, agora sob o admin.
+
 ## 4. Config (já preenchida)
 
 `js/supabase-config.js` já está com a **Project URL** e a **anon public key** deste projeto.
@@ -169,10 +249,14 @@ repositório ficar 60 dias sem nenhum commit; basta um commit de vez em quando, 
 
 ## Resumo do fluxo (o que fazer, em ordem)
 
-1. Criar o projeto (passo 1) e rodar o SQL (passos **2** e **3b**).
+1. Criar o projeto (passo 1) e rodar o SQL (passos **2**, **3b** e **3c**).
 2. Criar o usuário **admin** e marcá-lo como admin (passo 3).
-3. Rodar `node migrate-curated.js` (passo 4b) para publicar os prontos.
-4. Configurar os secrets do keep-alive no GitHub (passo 5).
+3. Publicar a Edge Function `admin-users` e testar (passo **3d**).
+4. Rodar `node migrate-curated.js` (passo 4b) para publicar os prontos.
+5. Configurar os secrets do keep-alive no GitHub (passo 5).
+
+> **Ordem no deploy de atualizações:** rode o SQL e publique a Edge Function **antes** de subir o
+> site. Se o site for primeiro, a aba Usuários aparece e dá erro ao cadastrar ou remover.
 
 Depois disso, no site: a aba **Criar banner** é aberta (monta + baixa WebP local); a aba
 **Banners salvos** exige login e mostra tudo por categoria, com a recomendada em destaque e os

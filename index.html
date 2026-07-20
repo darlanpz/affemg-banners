@@ -22,6 +22,7 @@
       <nav class="tabs" role="tablist" aria-label="Seções">
         <button class="tab is-active" role="tab" aria-selected="true" data-tab="criar">Criar banner</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="salvos" id="tabSalvos" hidden>Banners salvos</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="usuarios" id="tabUsuarios" hidden>Usuários</button>
       </nav>
       <div class="auth" id="authWidget" hidden></div>
     </div>
@@ -89,6 +90,19 @@
       <div id="salvos" class="gallery"></div>
       <p id="salvosMsg" class="empty" hidden></p>
     </section>
+
+    <!-- ======================= USUÁRIOS (admin) ======================= -->
+    <section id="panel-usuarios" class="panel" role="tabpanel" hidden>
+      <div class="gallery-head gallery-head--row">
+        <div>
+          <h1>Usuários</h1>
+          <p>Quem tem acesso à ferramenta. Ao remover alguém, os banners criados por essa pessoa continuam na galeria.</p>
+        </div>
+        <button class="btn btn--primary" id="btnNovoUsuario">Novo usuário</button>
+      </div>
+      <div id="usuarios"></div>
+      <p id="usuariosMsg" class="empty" hidden></p>
+    </section>
   </main>
 
   <footer class="sitefoot wrap">
@@ -105,5 +119,6 @@
   <script src="js/creator.js"></script>
   <script src="js/gallery.js"></script>
   <script src="js/backend-ui.js"></script>
+  <script src="js/admin-ui.js"></script>
 </body>
 </html>
