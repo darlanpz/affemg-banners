@@ -10,6 +10,11 @@
   'use strict';
 
   var CFG = global.AFFEMG_SUPABASE || {};
+
+  // Lido AGORA, na carga do script: o supabase-js consome e limpa o hash da URL
+  // assim que o cliente é criado, então depois já não dá para saber se a pessoa
+  // chegou por um convite ou por um link de recuperação de senha.
+  var TIPO_LINK = (String(location.hash || '').match(/[#&]type=([a-z_]+)/i) || [])[1] || '';
   var BUCKET = 'banners';
 
   var client = null;
@@ -206,8 +211,106 @@
     );
   }
 
+  // ---------- Solicitações de acesso ----------
+  // Quem não tem conta se apresenta por aqui. A tabela aceita insert de
+  // visitante (é o único jeito), mas só admin consegue ler e decidir.
+  function captchaSiteKey() { return CFG.turnstileSiteKey || ''; }
+
+  function solicitarAcesso(p) {
+    var nome = String(p.nome || '').trim();
+    var email = String(p.email || '').trim().toLowerCase();
+    if (nome.length < 2) return Promise.reject(new Error('Informe seu nome completo.'));
+    if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) {
+      return Promise.reject(new Error('Informe um e-mail válido.'));
+    }
+
+    // Com captcha configurado, o pedido passa pela Edge Function, que valida o
+    // token e insere com service_role. Assim o token não tem como ser burlado
+    // no cliente. Sem captcha, insere direto (a RLS permite).
+    if (captchaSiteKey()) {
+      if (!p.captchaToken) {
+        return Promise.reject(new Error('Confirme que você não é um robô.'));
+      }
+      return callFn('admin-users', {
+        acao: 'solicitar', nome: nome, email: email, captchaToken: p.captchaToken,
+      }).then(function () { return true; });
+    }
+
+    return getClient().from('solicitacoes_acesso')
+      .insert({ nome: nome, email: email, status: 'pendente' })
+      .then(function (res) {
+        if (res.error) {
+          // Índice único de pendentes: já existe pedido em aberto.
+          if (/duplicate|unique/i.test(res.error.message)) {
+            throw new Error('Já existe um pedido em análise para este e-mail.');
+          }
+          throw new Error(traduzErro(res.error.message));
+        }
+        return true;
+      });
+  }
+
+  function listSolicitacoes() {
+    return getClient().from('solicitacoes_acesso')
+      .select('id, nome, email, status, created_at')
+      .eq('status', 'pendente')
+      .order('created_at', { ascending: true })
+      .then(function (res) {
+        if (res.error) throw new Error(res.error.message);
+        return res.data || [];
+      });
+  }
+
+  function aprovarSolicitacao(id) {
+    return callFn('admin-users', { acao: 'aprovar', id: id, redirectTo: urlDeRetorno() });
+  }
+  function recusarSolicitacao(id) {
+    return callFn('admin-users', { acao: 'recusar', id: id });
+  }
+  function concluirSolicitacao(id) {
+    return callFn('admin-users', { acao: 'concluir', id: id });
+  }
+
+  // ---------- Senha ----------
+  // Para onde o link do e-mail traz a pessoa de volta. Precisa estar na lista
+  // de Redirect URLs do Supabase. Ver SUPABASE-SETUP.md.
+  function urlDeRetorno() {
+    return location.origin + location.pathname;
+  }
+
+  // Dispara o e-mail com o link de definir senha. Serve tanto para o
+  // "esqueci minha senha" quanto para o admin pedir a troca de outra pessoa.
+  function enviarLinkDeSenha(email) {
+    return getClient().auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), {
+      redirectTo: urlDeRetorno(),
+    }).then(function (res) {
+      if (res.error) throw new Error(traduzErro(res.error.message));
+      return true;
+    });
+  }
+
+  function definirSenha(nova) {
+    if (String(nova || '').length < 6) {
+      return Promise.reject(new Error('A senha precisa ter pelo menos 6 caracteres.'));
+    }
+    return getClient().auth.updateUser({ password: nova }).then(function (res) {
+      if (res.error) throw new Error(traduzErro(res.error.message));
+      return true;
+    });
+  }
+
+  // O link do e-mail (convite ou recuperação) volta com o tipo no hash. Isso é
+  // lido na carga do script, antes do supabase-js consumir e limpar o hash.
+  function tipoDoLink() { return TIPO_LINK; }
+
   function traduzErro(msg) {
     if (/invalid login credentials/i.test(msg)) return 'E-mail ou senha incorretos.';
+    if (/for security purposes|rate limit|too many/i.test(msg)) {
+      return 'Muitas tentativas seguidas. Espere um minuto e tente de novo.';
+    }
+    if (/new password should be different/i.test(msg)) {
+      return 'A nova senha precisa ser diferente da anterior.';
+    }
     if (/email not confirmed/i.test(msg)) return 'E-mail ainda não confirmado.';
     if (/failed to (send a )?request|fetch|networkerror/i.test(msg)) {
       return 'Não foi possível falar com o servidor. Verifique a conexão e tente de novo.';
@@ -226,5 +329,11 @@
     canDelete: canDelete, publicUrl: publicUrl, downloadBlob: downloadBlob,
     listUsers: listUsers, createUser: createUser, updateUser: updateUser, deleteUser: deleteUser,
     canManageUser: canManageUser, podeGerenciar: podeGerenciar,
+    solicitarAcesso: solicitarAcesso, listSolicitacoes: listSolicitacoes,
+    captchaSiteKey: captchaSiteKey,
+    aprovarSolicitacao: aprovarSolicitacao, recusarSolicitacao: recusarSolicitacao,
+    concluirSolicitacao: concluirSolicitacao,
+    enviarLinkDeSenha: enviarLinkDeSenha, definirSenha: definirSenha,
+    tipoDoLink: tipoDoLink,
   };
 })(typeof window !== 'undefined' ? window : this);

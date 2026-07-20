@@ -12,19 +12,33 @@
 <body>
   <header class="topbar">
     <div class="wrap topbar__inner">
-      <div class="brand">
+      <button type="button" class="brand" id="btnHome" title="Ir para o criador de banners">
         <img class="brand__mark" src="assets/app-icon.svg" alt="" aria-hidden="true" width="34" height="34">
-        <div>
+        <span class="brand__txt">
           <strong>Banners AFFEMG</strong>
           <span class="brand__sub">Crie e baixe banners no formato do app</span>
-        </div>
-      </div>
+        </span>
+      </button>
       <nav class="tabs" role="tablist" aria-label="Seções">
         <button class="tab is-active" role="tab" aria-selected="true" data-tab="criar">Criar banner</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="salvos" id="tabSalvos" hidden>Banners salvos</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="usuarios" id="tabUsuarios" hidden>Usuários</button>
       </nav>
-      <div class="auth" id="authWidget" hidden></div>
+      <div class="topbar__right">
+        <div class="notif" id="notif" hidden>
+          <button type="button" class="notif__btn" id="btnNotif" aria-label="Notificações" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true">
+              <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                d="M18 8.5a6 6 0 1 0-12 0c0 6-2.5 7.5-2.5 7.5h17S18 14.5 18 8.5z"/>
+              <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                d="M10.3 19.5a2 2 0 0 0 3.4 0"/>
+            </svg>
+            <span class="notif__badge" id="notifBadge" hidden>0</span>
+          </button>
+          <div class="notifpop" id="notifPop" role="dialog" aria-label="Notificações" hidden></div>
+        </div>
+        <div class="auth" id="authWidget" hidden></div>
+      </div>
     </div>
   </header>
 
@@ -109,6 +123,17 @@
     Ferramenta interna · Banners AFFEMG
   </footer>
 
+  <!-- Botão flutuante do tutorial -->
+  <button type="button" class="fab" id="btnTutorial" aria-label="Como usar a ferramenta">
+    <svg class="fab__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.9"/>
+      <path d="M9.4 9.3a2.7 2.7 0 1 1 3.4 2.6c-.6.2-.9.7-.9 1.3v.6" fill="none"
+            stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+      <circle cx="12" cy="16.8" r="1.05" fill="currentColor"/>
+    </svg>
+    <span class="fab__txt">Como usar</span>
+  </button>
+
   <script src="js/vendor/fflate.min.js"></script>
   <script src="js/vendor/supabase.js"></script>
   <script src="js/supabase-config.js"></script>
@@ -120,5 +145,6 @@
   <script src="js/gallery.js"></script>
   <script src="js/backend-ui.js"></script>
   <script src="js/admin-ui.js"></script>
+  <script src="js/onboarding.js"></script>
 </body>
 </html>

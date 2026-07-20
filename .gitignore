@@ -15,3 +15,6 @@ desktop.ini
 *.log
 tmp/
 temp/
+
+# original da foto de exemplo (a versao usada no site e assets/exemplo-fundo.webp)
+assets/originais/

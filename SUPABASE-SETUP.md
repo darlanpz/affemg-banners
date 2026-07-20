@@ -223,6 +223,80 @@ Confira se marcou certo (tem que voltar exatamente uma linha):
 select email, is_admin, is_master from public.profiles where is_master;
 ```
 
+## 3f. Solicitações de acesso e e-mails de senha
+
+Quem não tem conta pede acesso na própria tela de entrada. O pedido cai numa fila
+que aparece na aba **Usuários**. Ao aprovar, a pessoa recebe um convite por e-mail e
+**cria a própria senha**: nenhum administrador digita ou transporta senha de ninguém.
+
+### 1. Rodar o SQL
+
+Cole `supabase/sql/solicitacoes.sql` no SQL Editor e clique em **Run**.
+
+> Esse SQL permite que **visitantes não autenticados** criem registros na tabela
+> `solicitacoes_acesso`. É inevitável: quem ainda não tem conta precisa conseguir se
+> apresentar. O banco limita tamanho e formato dos campos e impede mais de um pedido
+> pendente por e-mail, mas **não há proteção contra alguém enviar muitos pedidos
+> diferentes**. Como o site é interno e de baixa exposição, o risco é aceitável. Se um
+> dia virar problema, a saída é mover o envio para uma Edge Function com captcha.
+
+### 2. Configurar o SMTP (obrigatório)
+
+Sem SMTP próprio, o Supabase só envia pouquíssimos e-mails por hora e apenas para
+endereços da própria equipe do projeto. **Convites e recuperação de senha não vão
+funcionar para a cliente sem isso.**
+
+**Authentication → Emails → SMTP Settings**: ative **Enable Custom SMTP** e preencha
+host, porta, usuário, senha, e o remetente (`Sender email` e `Sender name`).
+
+### 3. Autorizar a URL de retorno (obrigatório)
+
+O link do e-mail traz a pessoa de volta ao site. Se a URL não estiver autorizada, o
+link falha silenciosamente.
+
+**Authentication → URL Configuration**:
+- **Site URL**: `https://darlanpz.github.io/affemg-banners/`
+- **Redirect URLs**: adicione `https://darlanpz.github.io/affemg-banners/` e também
+  `http://localhost:8108/` enquanto estiver testando local.
+
+### 4. Ajustar os textos dos e-mails (recomendado)
+
+**Authentication → Emails → Templates**. Vale traduzir pelo menos **Invite user** e
+**Reset password**, que são os dois usados aqui. O padrão vem em inglês.
+
+### 4b. Captcha no formulário de acesso (recomendado)
+
+O formulário "Solicitar acesso" é aberto ao público. Para evitar envios automáticos, ele
+usa o **Cloudflare Turnstile** (gratuito, sem custo e sem cartão). É opcional: enquanto não
+configurado, o formulário funciona sem captcha.
+
+1. Em <https://dash.cloudflare.com/> → **Turnstile** → **Add widget**. Informe o domínio
+   `darlanpz.github.io` (e `localhost` para testar). Copie a **Site Key** e a **Secret Key**.
+2. **Site Key** (pública): coloque em `js/supabase-config.js`, no campo `turnstileSiteKey`.
+3. **Secret Key**: no painel do Supabase, **Edge Functions → admin-users → Settings → Secrets**,
+   crie `TURNSTILE_SECRET_KEY` com o valor da secret. Nunca coloque a secret no código.
+
+Com a `turnstileSiteKey` preenchida, o pedido passa a ser enviado pela Edge Function, que
+confere o token antes de gravar. Depois disso, você pode **fechar a porta direta** da tabela,
+rodando no SQL Editor (opcional, mas recomendado):
+
+```sql
+drop policy if exists "solicitacoes: qualquer um pede" on public.solicitacoes_acesso;
+```
+
+Isso faz com que pedidos só entrem via função (com captcha), nunca por insert direto.
+
+### 5. Testar, nesta ordem
+
+1. Saia da sua conta, clique em **Entrar** e depois em **Não tenho acesso**. Envie um
+   pedido com um e-mail seu que **ainda não tenha conta**.
+2. Entre como admin: o pedido aparece no topo da aba **Usuários**.
+3. Clique em **Aprovar**. Confira se o e-mail chegou.
+4. Abra o link do e-mail: deve abrir a tela de criar senha. Defina e confirme que entrou.
+5. Repita o pedido com um e-mail que **já tem conta**: ao aprovar, a ferramenta avisa e
+   oferece enviar o link de nova senha.
+6. Na lista de usuários, teste **Redefinir senha** em alguém.
+
 ## 3d. Publicar a Edge Function `admin-users`
 
 Criar e remover contas exige a chave **`service_role`**, que ignora todas as regras de RLS e por

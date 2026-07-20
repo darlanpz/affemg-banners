@@ -40,11 +40,61 @@ function traduzErro(msg: string) {
   return msg;
 }
 
+// Confere o token do Cloudflare Turnstile. Sem secret configurada, o captcha
+// fica desligado (útil em teste local).
+async function captchaOk(token: string, req: Request) {
+  const secret = Deno.env.get('TURNSTILE_SECRET_KEY');
+  if (!secret) return true;            // captcha desativado
+  if (!token) return false;
+  const form = new URLSearchParams();
+  form.set('secret', secret);
+  form.set('response', token);
+  const ip = req.headers.get('CF-Connecting-IP') || req.headers.get('x-forwarded-for') || '';
+  if (ip) form.set('remoteip', ip.split(',')[0].trim());
+  try {
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      { method: 'POST', body: form });
+    const data = await r.json();
+    return !!(data && data.success);
+  } catch (_e) {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
-    // 1. Quem está chamando?
+    const body = await req.json().catch(() => ({}));
+    const acao = body.acao;
+
+    // ---------- solicitar acesso (PÚBLICO, protegido por captcha) ----------
+    // Roda antes do gate de admin: quem pede acesso ainda não tem conta.
+    if (acao === 'solicitar') {
+      const admin = createClient(URL_, SERVICE, { auth: { persistSession: false } });
+      const nome = String(body.nome || '').trim();
+      const email = String(body.email || '').trim().toLowerCase();
+
+      if (nome.length < 2) return json({ error: 'Informe seu nome completo.' }, 400);
+      if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) {
+        return json({ error: 'Informe um e-mail válido.' }, 400);
+      }
+      if (!(await captchaOk(String(body.captchaToken || ''), req))) {
+        return json({ error: 'Falha na verificação de segurança. Recarregue e tente de novo.' }, 400);
+      }
+
+      const { error } = await admin.from('solicitacoes_acesso')
+        .insert({ nome, email, status: 'pendente' });
+      if (error) {
+        if (/duplicate|unique/i.test(error.message)) {
+          return json({ error: 'Já existe um pedido em análise para este e-mail.' }, 409);
+        }
+        return json({ error: error.message }, 400);
+      }
+      return json({ ok: true });
+    }
+
+    // 1. Quem está chamando? (tudo daqui para baixo exige admin)
     const authHeader = req.headers.get('Authorization') || '';
     if (!authHeader) return json({ error: 'Não autenticado.' }, 401);
 
@@ -64,9 +114,6 @@ Deno.serve(async (req) => {
       return json({ error: 'Apenas administradores podem gerenciar usuários.' }, 403);
     }
     const souMaster = !!callerProfile.is_master;
-
-    const body = await req.json().catch(() => ({}));
-    const acao = body.acao;
 
     // Quem pode mexer em quem: admin comum só mexe em não-admin; o master mexe
     // em todos. Vale tanto para editar quanto para remover.
@@ -168,6 +215,69 @@ Deno.serve(async (req) => {
       const { error } = await admin.auth.admin.deleteUser(id);
       if (error) return json({ error: traduzErro(error.message) }, 400);
 
+      return json({ ok: true });
+    }
+
+    // ---------- aprovar solicitação de acesso ----------
+    // Cria a conta e manda um convite por e-mail. A pessoa clica no link e
+    // define a própria senha: nenhum admin precisa inventar nem transportar
+    // senha de ninguém.
+    if (acao === 'aprovar') {
+      const id = String(body.id || '');
+      const redirectTo = String(body.redirectTo || '');
+      if (!id) return json({ error: 'Solicitação não informada.' }, 400);
+
+      const { data: pedido } = await admin
+        .from('solicitacoes_acesso').select('*').eq('id', id).maybeSingle();
+
+      if (!pedido) return json({ error: 'Solicitação não encontrada.' }, 404);
+      if (pedido.status !== 'pendente') {
+        return json({ error: 'Esta solicitação já foi decidida.' }, 409);
+      }
+
+      const { error } = await admin.auth.admin.inviteUserByEmail(pedido.email, {
+        data: { nome: pedido.nome },
+        redirectTo: redirectTo || undefined,
+      });
+
+      if (error) {
+        // Caso comum: a pessoa já tem conta e só esqueceu a senha. Não é falha,
+        // é um desvio de fluxo, então a tela oferece o envio do link de senha.
+        if (/already been registered|already exists|duplicate/i.test(error.message)) {
+          return json({ ok: true, jaExiste: true, email: pedido.email, nome: pedido.nome });
+        }
+        return json({ error: traduzErro(error.message) }, 400);
+      }
+
+      await admin.from('solicitacoes_acesso')
+        .update({ status: 'aprovada', decidida_em: new Date().toISOString(), decidida_por: caller.id })
+        .eq('id', id);
+
+      return json({ ok: true, email: pedido.email });
+    }
+
+    // ---------- recusar solicitação ----------
+    if (acao === 'recusar') {
+      const id = String(body.id || '');
+      if (!id) return json({ error: 'Solicitação não informada.' }, 400);
+
+      const { error } = await admin.from('solicitacoes_acesso')
+        .update({ status: 'recusada', decidida_em: new Date().toISOString(), decidida_por: caller.id })
+        .eq('id', id).eq('status', 'pendente');
+
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    // ---------- marcar a solicitação como resolvida ----------
+    // Usado quando o e-mail já tinha conta: o pedido não vira cadastro novo,
+    // mas também não pode ficar pendente para sempre.
+    if (acao === 'concluir') {
+      const id = String(body.id || '');
+      if (!id) return json({ error: 'Solicitação não informada.' }, 400);
+      await admin.from('solicitacoes_acesso')
+        .update({ status: 'aprovada', decidida_em: new Date().toISOString(), decidida_por: caller.id })
+        .eq('id', id);
       return json({ ok: true });
     }
 

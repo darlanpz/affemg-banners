@@ -32,7 +32,15 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; min-height: 64px; flex-wrap: wrap;
 }
-.brand { display: flex; align-items: center; gap: 12px; }
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  background: none; border: 0; padding: 4px 6px; margin-left: -6px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  border-radius: 8px; transition: background-color .15s ease;
+}
+.brand:hover { background: var(--bg); }
+.brand:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.brand__txt { display: block; }
 .brand strong { display: block; font-size: 16px; }
 .brand__sub { font-size: 12.5px; color: var(--muted); }
 .brand__mark {
@@ -406,13 +414,100 @@ body.has-loading { overflow: hidden; }
   animation: spin .7s linear infinite;
 }
 
+/* ---------- Boas-vindas e tutorial ---------- */
+.modal__box--wel { max-width: 460px; }
+.wel { text-align: center; }
+.wel__logo { display: block; margin: 0 auto 12px; }
+.wel__title { font-size: 19px; margin: 0 0 10px; }
+.wel__text { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 0 0 14px; }
+.wel__text--sm { font-size: 12.5px; margin-bottom: 0; }
+.wel__list {
+  text-align: left; margin: 0 0 14px; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.wel__list li {
+  font-size: 13.5px; color: var(--ink); line-height: 1.45;
+  background: var(--blue-050); border-radius: 8px; padding: 10px 12px;
+}
+
+body.has-tour { overflow: hidden; }
+/* O "furo" é um retângulo transparente com uma sombra gigante em volta:
+   é o que escurece o resto da tela sem cobrir o alvo. */
+.tour__hole {
+  position: fixed; z-index: 141; pointer-events: none;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(9, 18, 24, .55);
+  outline: 2px solid var(--blue);
+  transition: top .25s ease, left .25s ease, width .25s ease, height .25s ease;
+}
+
+.tour__hole[hidden] { display: none; }
+.tour__box {
+  position: fixed; z-index: 142; width: min(330px, calc(100vw - 24px));
+  background: var(--white); border-radius: var(--radius);
+  box-shadow: 0 12px 44px rgba(9, 18, 24, .32);
+  padding: 16px 18px 14px;
+  animation: aff-pop .22s cubic-bezier(.2, .8, .3, 1) both;
+  transition: top .25s ease, left .25s ease;
+}
+.tour__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.tour__count { font-size: 11.5px; font-weight: 700; color: var(--blue); letter-spacing: .03em; text-transform: uppercase; }
+.tour__x { background: none; border: 0; font-size: 21px; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 2px; }
+.tour__x:hover { color: var(--ink); }
+.tour__title { font-size: 15.5px; margin: 0 0 6px; }
+.tour__text { font-size: 13.5px; color: var(--muted); line-height: 1.55; margin: 0; }
+.tour__acts { margin-top: 12px; }
+.tour__foot { margin-top: 14px; display: flex; justify-content: flex-end; }
+.tour__wait {
+  font-size: 12px; color: var(--blue); font-weight: 600;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.tour__wait::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--blue); animation: aff-pulse 1.4s ease-in-out infinite;
+}
+@keyframes aff-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+
+@media (max-width: 560px) {
+  .tour__hole[hidden] { display: none; }
+.tour__box { left: 12px !important; width: calc(100vw - 24px); }
+}
+
+/* Botão flutuante do tutorial. Fica abaixo do furo do tour (141) de propósito:
+   assim ele é escurecido como o resto e destacado quando o tour aponta para ele. */
+.fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 90;
+  display: inline-flex; align-items: center; gap: 9px;
+  height: 46px; padding: 0 20px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  background: var(--blue); color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 96, 166, .34), 0 2px 6px rgba(18, 36, 47, .16);
+  transition: background-color .15s ease, transform .15s ease, box-shadow .2s ease;
+}
+.fab:hover {
+  background: var(--blue-dark); transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 96, 166, .38), 0 3px 8px rgba(18, 36, 47, .18);
+}
+.fab:active { transform: translateY(0); }
+.fab:focus-visible { outline: 3px solid var(--blue-050); outline-offset: 2px; }
+.fab__icon { flex: 0 0 auto; }
+
+/* Some quando há modal, lightbox ou a camada de carregando na frente. */
+body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: none; }
+
+@media (max-width: 560px) {
+  .fab { right: 14px; bottom: 14px; height: 46px; width: 46px; padding: 0; justify-content: center; }
+  .fab__txt { display: none; }
+}
+
 /* Respeita quem pediu menos animação no sistema. */
 @media (prefers-reduced-motion: reduce) {
   .modal, .modal__box, .lightbox, .lightbox__inner, .panel.is-active,
-  .gcard, .setcard, .ucard, .gsec, .toast, .toast.is-out, .loading, .loading__box {
+  .gcard, .setcard, .ucard, .gsec, .toast, .toast.is-out, .loading, .loading__box,
+  .tour__box, .tour__hole, .tour__wait::before, .fab {
     animation-duration: .01ms; animation-iteration-count: 1;
   }
-  .gcard:hover, .ucard:hover, .btn:active { transform: none; }
+  .gcard:hover, .ucard:hover, .btn:active, .fab:hover { transform: none; }
   .loading__spin { animation-duration: 1.6s; }
 }
 
@@ -446,7 +541,77 @@ body.has-loading { overflow: hidden; }
 }
 .ucard__tag--master { background: #fdf3cf; color: #7a5c00; }
 .ucard__tag--eu { background: var(--bg); color: var(--muted); }
-.ucard__acts { display: flex; gap: 8px; align-items: center; }
+.ucard__tag--novo { background: #e6f4ea; color: #1e6b3c; }
+.ucard__acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Pedidos de acesso: destacados, porque exigem ação. */
+.pedidos { margin-bottom: 28px; }
+.usec { margin-top: 4px; }
+.ucard--pedido { border-color: #bcd9c7; background: #f6fbf8; }
+
+/* Links discretos dentro dos modais (esqueci a senha, pedir acesso). */
+.modal__links {
+  display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px;
+}
+.linkbtn {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-size: 13px; color: var(--blue); text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.linkbtn:hover { color: var(--blue-dark); }
+.captcha { margin-top: 14px; min-height: 65px; }
+
+/* ---------- Notificações (sino do admin) ---------- */
+.topbar__right { display: flex; align-items: center; gap: 10px; }
+.notif { position: relative; display: flex; }
+.notif__btn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--white); color: var(--ink); cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.notif__btn:hover { background: var(--bg); border-color: #b9c6d1; }
+.notif__btn.is-alerta { color: var(--blue); border-color: var(--blue); }
+.notif__badge {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px;
+  padding: 0 5px; border-radius: 999px; background: #c0392b; color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2px var(--white);
+}
+
+.notifpop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 95;
+  width: min(320px, calc(100vw - 28px));
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 10px 34px rgba(18, 36, 47, .18);
+  padding: 12px; animation: aff-pop .18s cubic-bezier(.2, .8, .3, 1) both;
+}
+.notifpop__head { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.notifpop__sub { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+.notifpop__vazio { font-size: 13px; color: var(--muted); padding: 10px 2px; }
+.notifpop__list { display: flex; flex-direction: column; gap: 4px; }
+.notifpop__item {
+  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  background: var(--blue-050); border: 0; border-radius: 8px; padding: 9px 11px;
+  cursor: pointer; font: inherit; transition: background-color .15s ease;
+}
+.notifpop__item:hover { background: #dceaf5; }
+.notifpop__nome { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.notifpop__mail { font-size: 12px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notifpop__todos {
+  width: 100%; margin-top: 10px; padding: 8px; border: 0; border-radius: 8px;
+  background: var(--blue); color: #fff; font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background-color .15s ease;
+}
+.notifpop__todos:hover { background: var(--blue-dark); }
+
+@media (prefers-reduced-motion: reduce) { .notifpop { animation-duration: .01ms; } }
+
+/* Links empilhados logo abaixo do campo (esqueci a senha, pedir acesso). */
+.modal__links--stack {
+  flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 8px;
+}
 .ucard__nota { font-size: 12.5px; color: var(--muted); font-style: italic; }
 .ucard--skel { pointer-events: none; }
 .skel--short { width: 35%; }

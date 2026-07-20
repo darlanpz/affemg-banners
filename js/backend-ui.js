@@ -186,6 +186,9 @@
     toast: toast, carregando: carregando,
     campoSenha: campoSenha, ligarOlhos: ligarOlhos,
     openLogin: function (cb) { openLogin(cb); },
+    openSolicitarAcesso: function (e) { openSolicitarAcesso(e); },
+    openEsqueciSenha: function (e) { openEsqueciSenha(e); },
+    openDefinirSenha: function (c) { openDefinirSenha(c); },
   };
 
   // ---------- Login ----------
@@ -194,6 +197,10 @@
       '<h3 class="modal__title">Entrar</h3>' +
       '<label class="modal__label">E-mail</label><input type="email" id="mEmail" autocomplete="username">' +
       '<label class="modal__label">Senha</label>' + campoSenha('mPass', 'current-password') +
+      '<div class="modal__links modal__links--stack">' +
+        '<button type="button" class="linkbtn" id="mEsqueci">Esqueci minha senha</button>' +
+        '<button type="button" class="linkbtn" id="mPedir">Não tenho acesso</button>' +
+      '</div>' +
       '<div class="modal__msg" id="mMsg"></div>' +
       '<div class="modal__actions"><button class="btn btn--ghost" id="mCancel">Cancelar</button>' +
       '<button class="btn btn--primary" id="mLogin">Entrar</button></div>'
@@ -201,6 +208,12 @@
     var email = m.box.querySelector('#mEmail'); email.focus();
     ligarOlhos(m.box);
     m.box.querySelector('#mCancel').addEventListener('click', m.close);
+    m.box.querySelector('#mEsqueci').addEventListener('click', function () {
+      m.close(); openEsqueciSenha(email.value.trim());
+    });
+    m.box.querySelector('#mPedir').addEventListener('click', function () {
+      m.close(); openSolicitarAcesso(email.value.trim());
+    });
     function submit() {
       var msg = m.box.querySelector('#mMsg'); msg.textContent = 'Entrando…'; msg.className = 'modal__msg';
       var btn = m.box.querySelector('#mLogin'); btn.disabled = true;
@@ -210,6 +223,188 @@
     }
     m.box.querySelector('#mLogin').addEventListener('click', submit);
     m.box.querySelector('#mPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+  }
+
+  // ---------- Captcha (Cloudflare Turnstile) ----------
+  // Carregado sob demanda, e só quando há site key. O resto do site continua
+  // sem scripts externos.
+  var turnstilePromise = null;
+  function carregaTurnstile() {
+    if (turnstilePromise) return turnstilePromise;
+    turnstilePromise = new Promise(function (resolve, reject) {
+      if (window.turnstile) return resolve(window.turnstile);
+      var s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true; s.defer = true;
+      s.onload = function () { resolve(window.turnstile); };
+      s.onerror = function () { reject(new Error('Não foi possível carregar a verificação de segurança.')); };
+      document.head.appendChild(s);
+    });
+    return turnstilePromise;
+  }
+
+  // ---------- Solicitar acesso ----------
+  function openSolicitarAcesso(emailInicial) {
+    var temCaptcha = BK.captchaSiteKey && BK.captchaSiteKey();
+    var m = modal(
+      '<h3 class="modal__title">Solicitar acesso</h3>' +
+      '<p class="modal__text">O acesso é liberado por um administrador. ' +
+        'Informe seus dados e você receberá um e-mail para criar sua senha.</p>' +
+      '<label class="modal__label">Nome completo</label><input type="text" id="pNome" autocomplete="name">' +
+      '<label class="modal__label">E-mail</label><input type="email" id="pEmail" autocomplete="email">' +
+      (temCaptcha ? '<div class="captcha" id="pCaptcha"></div>' : '') +
+      '<div class="modal__msg" id="pMsg"></div>' +
+      '<div class="modal__actions"><button class="btn btn--ghost" id="pCancel">Cancelar</button>' +
+      '<button class="btn btn--primary" id="pEnviar">Enviar pedido</button></div>'
+    );
+    var nome = m.box.querySelector('#pNome');
+    var email = m.box.querySelector('#pEmail');
+    var msg = m.box.querySelector('#pMsg');
+    var btn = m.box.querySelector('#pEnviar');
+    if (emailInicial) email.value = emailInicial;
+    nome.focus();
+    m.box.querySelector('#pCancel').addEventListener('click', m.close);
+
+    var captchaToken = '';
+    var ts = null, widgetId = null;
+    function resetaCaptcha() {
+      captchaToken = '';
+      if (ts && widgetId != null) { try { ts.reset(widgetId); } catch (e) {} btn.disabled = true; }
+    }
+    if (temCaptcha) {
+      btn.disabled = true;   // só libera quando o captcha resolver
+      carregaTurnstile().then(function (api) {
+        ts = api;
+        widgetId = api.render('#pCaptcha', {
+          sitekey: BK.captchaSiteKey(),
+          callback: function (t) { captchaToken = t; btn.disabled = false; },
+          'expired-callback': function () { captchaToken = ''; btn.disabled = true; },
+          'error-callback': function () { captchaToken = ''; btn.disabled = true; },
+        });
+      }).catch(function (err) {
+        msg.textContent = err.message; msg.className = 'modal__msg is-err';
+      });
+    }
+
+    function enviar() {
+      msg.textContent = 'Enviando…'; msg.className = 'modal__msg';
+      btn.disabled = true;
+      BK.solicitarAcesso({ nome: nome.value, email: email.value, captchaToken: captchaToken })
+        .then(function () {
+          m.close();
+          avisar({
+            titulo: 'Pedido enviado',
+            texto: 'Seu pedido foi enviado aos administradores. Assim que for aprovado, ' +
+                   'você receberá um e-mail em ' + email.value.trim() + ' com o link para criar sua senha.',
+          });
+        })
+        .catch(function (err) {
+          msg.textContent = err.message; msg.className = 'modal__msg is-err';
+          // O token do captcha é de uso único: gera um novo para a próxima tentativa.
+          if (temCaptcha) resetaCaptcha(); else btn.disabled = false;
+        });
+    }
+    btn.addEventListener('click', enviar);
+    email.addEventListener('keydown', function (e) { if (e.key === 'Enter') enviar(); });
+  }
+
+  // ---------- Esqueci minha senha ----------
+  function openEsqueciSenha(emailInicial) {
+    var m = modal(
+      '<h3 class="modal__title">Redefinir senha</h3>' +
+      '<p class="modal__text">Informe seu e-mail. Se houver uma conta, você receberá ' +
+        'um link para criar uma nova senha.</p>' +
+      '<label class="modal__label">E-mail</label><input type="email" id="rEmail" autocomplete="email">' +
+      '<div class="modal__msg" id="rMsg"></div>' +
+      '<div class="modal__actions"><button class="btn btn--ghost" id="rCancel">Cancelar</button>' +
+      '<button class="btn btn--primary" id="rEnviar">Enviar link</button></div>'
+    );
+    var email = m.box.querySelector('#rEmail');
+    var msg = m.box.querySelector('#rMsg');
+    var btn = m.box.querySelector('#rEnviar');
+    if (emailInicial) email.value = emailInicial;
+    email.focus();
+    m.box.querySelector('#rCancel').addEventListener('click', m.close);
+
+    function enviar() {
+      var v = email.value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(v)) {
+        msg.textContent = 'Informe um e-mail válido.'; msg.className = 'modal__msg is-err';
+        return;
+      }
+      msg.textContent = 'Enviando…'; msg.className = 'modal__msg';
+      btn.disabled = true;
+      BK.enviarLinkDeSenha(v)
+        .then(function () {
+          m.close();
+          // A mensagem não confirma se a conta existe, de propósito: isso
+          // evitaria descobrir quem tem cadastro só testando e-mails.
+          avisar({
+            titulo: 'Verifique seu e-mail',
+            texto: 'Se existir uma conta para ' + v + ', o link para criar uma nova senha ' +
+                   'chegará em instantes. O link vale por uma hora.',
+          });
+        })
+        .catch(function (err) {
+          msg.textContent = err.message; msg.className = 'modal__msg is-err';
+          btn.disabled = false;
+        });
+    }
+    btn.addEventListener('click', enviar);
+    email.addEventListener('keydown', function (e) { if (e.key === 'Enter') enviar(); });
+  }
+
+  // ---------- Definir senha (chegou pelo link do e-mail) ----------
+  function openDefinirSenha(convite) {
+    var m = modal(
+      '<h3 class="modal__title">' + (convite ? 'Bem-vindo. Crie sua senha' : 'Crie sua nova senha') + '</h3>' +
+      '<p class="modal__text">' + (convite
+        ? 'Seu acesso foi aprovado. Defina uma senha para entrar na ferramenta.'
+        : 'Escolha uma nova senha para a sua conta.') + '</p>' +
+      '<label class="modal__label">Nova senha</label>' + campoSenha('dSenha', 'new-password') +
+      '<label class="modal__label">Repita a senha</label>' + campoSenha('dSenha2', 'new-password') +
+      '<div class="modal__hint">Pelo menos 6 caracteres.</div>' +
+      '<div class="modal__msg" id="dMsg"></div>' +
+      '<div class="modal__actions">' +
+      '<button class="btn btn--primary" id="dSalvar">Salvar senha</button></div>'
+    );
+    var s1 = m.box.querySelector('#dSenha');
+    var s2 = m.box.querySelector('#dSenha2');
+    var msg = m.box.querySelector('#dMsg');
+    var btn = m.box.querySelector('#dSalvar');
+    ligarOlhos(m.box);
+    s1.focus();
+
+    function salvar() {
+      if (s1.value.length < 6) {
+        msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+        msg.className = 'modal__msg is-err'; s1.focus(); return;
+      }
+      if (s1.value !== s2.value) {
+        msg.textContent = 'As duas senhas não são iguais.';
+        msg.className = 'modal__msg is-err'; s2.focus(); return;
+      }
+      msg.textContent = ''; btn.disabled = true;
+      var load = carregando('Salvando a senha…');
+      BK.definirSenha(s1.value)
+        .then(function () {
+          load.fecha(); m.close();
+          limpaHash();
+          toast('Senha criada. Você já está conectado.', 'ok');
+        })
+        .catch(function (err) {
+          load.fecha();
+          msg.textContent = err.message; msg.className = 'modal__msg is-err';
+          btn.disabled = false;
+        });
+    }
+    btn.addEventListener('click', salvar);
+    s2.addEventListener('keydown', function (e) { if (e.key === 'Enter') salvar(); });
+  }
+
+  // Tira o token da barra de endereço depois de usado.
+  function limpaHash() {
+    if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
   }
 
   // ---------- Widget de auth ----------
@@ -467,6 +662,22 @@
       AffemgSalvos.invalidate();
       if (isSalvosVisible()) AffemgSalvos.refresh();
     });
-    BK.init();
+
+    // Quem chega por um link de convite ou de recuperação já vem com sessão
+    // aberta, mas sem senha definida: a primeira coisa na tela é criá-la.
+    var tipo = BK.tipoDoLink();
+    BK.init().then(function (user) {
+      if (user && (tipo === 'invite' || tipo === 'recovery')) {
+        openDefinirSenha(tipo === 'invite');
+      } else if (tipo === 'recovery' || tipo === 'invite') {
+        // Link expirado ou já usado: a sessão não veio.
+        avisar({
+          titulo: 'Link inválido ou expirado',
+          texto: 'Peça um novo link em “Esqueci minha senha”, na tela de entrada.',
+          erro: true,
+        });
+        limpaHash();
+      }
+    });
   });
 })();

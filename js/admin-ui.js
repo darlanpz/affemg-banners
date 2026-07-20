@@ -101,10 +101,28 @@
       '</div>' +
       '<div class="ucard__acts">' +
         (pode
-          ? '<button class="btn btn--ghost btn--sm" data-edit="1">Editar</button>' +
+          ? '<button class="btn btn--ghost btn--sm" data-senha="1">Redefinir senha</button>' +
+            '<button class="btn btn--ghost btn--sm" data-edit="1">Editar</button>' +
             '<button class="btn btn--danger btn--sm" data-del="1">Remover</button>'
           : '<span class="ucard__nota">' + (eu ? 'Sua conta' : 'Somente leitura') + '</span>') +
       '</div>';
+
+    var senha = card.querySelector('[data-senha]');
+    if (senha) senha.addEventListener('click', function () {
+      confirmar({
+        titulo: 'Enviar link de nova senha',
+        texto: '“' + (u.nome || u.email) + '” vai receber um e-mail em ' + u.email +
+               ' com o link para criar uma nova senha. A senha atual continua valendo até ela trocar.',
+        ok: 'Enviar',
+      }).then(function (sim) {
+        if (!sim) return;
+        senha.disabled = true; senha.textContent = 'Enviando…';
+        BK.enviarLinkDeSenha(u.email)
+          .then(function () { toast('Link enviado para ' + u.email + '.', 'ok'); })
+          .catch(function (err) { toast('Falha ao enviar: ' + err.message, 'erro'); })
+          .then(function () { senha.disabled = false; senha.textContent = 'Redefinir senha'; });
+      });
+    });
 
     var edit = card.querySelector('[data-edit]');
     if (edit) edit.addEventListener('click', function () {
@@ -138,6 +156,98 @@
     return card;
   }
 
+  // ---------- Fila de solicitações de acesso ----------
+  function pedidoCard(s, onChange) {
+    var card = el('div', 'ucard ucard--pedido');
+    card.innerHTML =
+      '<div class="ucard__info">' +
+        '<span class="ucard__name">' + esc(s.nome) +
+          '<span class="ucard__tag ucard__tag--novo">novo</span></span>' +
+        '<span class="ucard__mail">' + esc(s.email) + '</span>' +
+        '<span class="ucard__since">Pedido em ' + dataBR(s.created_at) + '</span>' +
+      '</div>' +
+      '<div class="ucard__acts">' +
+        '<button class="btn btn--ghost btn--sm" data-nao="1">Recusar</button>' +
+        '<button class="btn btn--primary btn--sm" data-sim="1">Aprovar</button>' +
+      '</div>';
+
+    function trava(on, texto) {
+      card.querySelectorAll('button').forEach(function (b) { b.disabled = on; });
+      if (texto) card.querySelector('[data-sim]').textContent = texto;
+    }
+
+    card.querySelector('[data-sim]').addEventListener('click', function () {
+      trava(true, 'Aprovando…');
+      var load = carregando('Criando a conta e enviando o convite…');
+      BK.aprovarSolicitacao(s.id)
+        .then(function (r) {
+          load.fecha();
+          if (r && r.jaExiste) return jaTemConta(s, onChange);
+          toast('Acesso aprovado. Convite enviado para ' + s.email + '.', 'ok');
+          if (onChange) onChange();
+        })
+        .catch(function (err) {
+          load.fecha();
+          toast('Falha ao aprovar: ' + err.message, 'erro');
+          trava(false, 'Aprovar');
+        });
+    });
+
+    card.querySelector('[data-nao]').addEventListener('click', function () {
+      confirmar({
+        titulo: 'Recusar pedido',
+        texto: '“' + s.nome + '” não terá acesso à ferramenta. O pedido sai da lista.',
+        ok: 'Recusar', perigo: true,
+      }).then(function (sim) {
+        if (!sim) return;
+        trava(true);
+        BK.recusarSolicitacao(s.id)
+          .then(function () { toast('Pedido recusado.', 'ok'); if (onChange) onChange(); })
+          .catch(function (err) { toast('Falha: ' + err.message, 'erro'); trava(false, 'Aprovar'); });
+      });
+    });
+    return card;
+  }
+
+  // O e-mail do pedido já tem conta: em vez de criar de novo, o caminho útil
+  // é mandar o link para a pessoa recuperar a senha.
+  function jaTemConta(s, onChange) {
+    var m = modal(
+      '<h3 class="modal__title">Esse e-mail já tem conta</h3>' +
+      '<p class="modal__text">Já existe um cadastro para <strong>' + esc(s.email) + '</strong>. ' +
+        'Provavelmente a pessoa esqueceu a senha. Você pode enviar o link para ela criar uma nova.</p>' +
+      '<div class="modal__msg" id="jMsg"></div>' +
+      '<div class="modal__actions">' +
+        '<button class="btn btn--ghost" id="jFechar">Só arquivar o pedido</button>' +
+        '<button class="btn btn--primary" id="jEnviar">Enviar link de senha</button>' +
+      '</div>'
+    );
+    function arquiva() {
+      return BK.concluirSolicitacao(s.id).catch(function () {});
+    }
+    m.box.querySelector('#jFechar').addEventListener('click', function () {
+      m.close();
+      arquiva().then(function () { toast('Pedido arquivado.', 'ok'); if (onChange) onChange(); });
+    });
+    m.box.querySelector('#jEnviar').addEventListener('click', function () {
+      var btn = m.box.querySelector('#jEnviar');
+      btn.disabled = true;
+      m.box.querySelector('#jMsg').textContent = 'Enviando…';
+      BK.enviarLinkDeSenha(s.email)
+        .then(arquiva)
+        .then(function () {
+          m.close();
+          toast('Link de nova senha enviado para ' + s.email + '.', 'ok');
+          if (onChange) onChange();
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          var msg = m.box.querySelector('#jMsg');
+          msg.textContent = err.message; msg.className = 'modal__msg is-err';
+        });
+    });
+  }
+
   // ---------- Skeleton ----------
   function skeleton() {
     var linha =
@@ -154,10 +264,23 @@
   }
 
   // ---------- Render ----------
-  function render(users) {
+  function render(users, pedidos) {
     var root = $('#usuarios');
     var msg = $('#usuariosMsg');
     root.innerHTML = '';
+
+    // Pedidos de acesso vêm primeiro: é o que exige ação do admin.
+    if (pedidos && pedidos.length) {
+      var bloco = el('section', 'pedidos');
+      bloco.appendChild(el('h2', 'block-title',
+        'Pedidos de acesso (' + pedidos.length + ')'));
+      var lista = el('div', 'ulist');
+      pedidos.forEach(function (s) {
+        lista.appendChild(pedidoCard(s, function () { Usuarios.invalidate(); Usuarios.refresh(); }));
+      });
+      bloco.appendChild(lista);
+      root.appendChild(bloco);
+    }
 
     if (!users.length) {
       msg.hidden = false;
@@ -166,11 +289,14 @@
     }
     msg.hidden = true;
 
+    var wrap = el('section', 'usec');
+    if (pedidos && pedidos.length) wrap.appendChild(el('h2', 'block-title', 'Com acesso'));
     var lista = el('div', 'ulist');
     users.forEach(function (u) {
       lista.appendChild(userCard(u, function () { Usuarios.invalidate(); Usuarios.refresh(); }));
     });
-    root.appendChild(lista);
+    wrap.appendChild(lista);
+    root.appendChild(wrap);
   }
 
   function isVisible() { var p = $('#panel-usuarios'); return p && !p.hidden; }
@@ -185,8 +311,15 @@
       var msg = $('#usuariosMsg');
       root.innerHTML = skeleton();
       msg.hidden = true;
-      BK.listUsers()
-        .then(function (us) { carregado = true; render(us); })
+      Promise.all([
+        BK.listUsers(),
+        BK.listSolicitacoes().catch(function () { return []; }),
+      ])
+        .then(function (r) {
+          carregado = true;
+          render(r[0], r[1]);
+          if (window.AffemgNotif) AffemgNotif.aplica(r[1]);  // sincroniza o sino
+        })
         .catch(function (err) {
           root.innerHTML = '';
           msg.hidden = false;
@@ -196,6 +329,118 @@
   };
   window.AffemgUsuarios = Usuarios;
 
+  // ---------- Notificações (sino, só admin) ----------
+  var Notif = (function () {
+    var timer = null;
+    var pop, btn, badge, wrap;
+
+    function elementos() {
+      wrap = wrap || $('#notif');
+      btn = btn || $('#btnNotif');
+      badge = badge || $('#notifBadge');
+      pop = pop || $('#notifPop');
+    }
+
+    function fechaPop() {
+      if (!pop) return;
+      pop.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', foraDoPop, true);
+    }
+    function foraDoPop(e) {
+      if (wrap && !wrap.contains(e.target)) fechaPop();
+    }
+
+    function irParaUsuarios() {
+      fechaPop();
+      if (window.AffemgTabs) window.AffemgTabs.activate('usuarios');
+      var painel = $('#panel-usuarios');
+      if (painel) painel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+
+    function pintaPop(pedidos) {
+      elementos();
+      pop.innerHTML = '';
+      pop.appendChild(el('div', 'notifpop__head', 'Notificações'));
+
+      if (!pedidos.length) {
+        pop.appendChild(el('div', 'notifpop__vazio', 'Nada de novo por aqui.'));
+        return;
+      }
+
+      pop.appendChild(el('div', 'notifpop__sub',
+        pedidos.length === 1 ? '1 pedido de acesso aguardando' : pedidos.length + ' pedidos de acesso aguardando'));
+
+      var lista = el('div', 'notifpop__list');
+      pedidos.slice(0, 5).forEach(function (s) {
+        var item = el('button', 'notifpop__item');
+        item.type = 'button';
+        item.innerHTML =
+          '<span class="notifpop__nome">' + esc(s.nome) + '</span>' +
+          '<span class="notifpop__mail">' + esc(s.email) + '</span>';
+        item.addEventListener('click', irParaUsuarios);
+        lista.appendChild(item);
+      });
+      pop.appendChild(lista);
+
+      var verTodos = el('button', 'notifpop__todos', 'Ver na aba Usuários');
+      verTodos.type = 'button';
+      verTodos.addEventListener('click', irParaUsuarios);
+      pop.appendChild(verTodos);
+    }
+
+    // Atualiza o número no sino. Aceita a lista já buscada (para não pedir de
+    // novo quando a aba Usuários acabou de carregar).
+    function aplica(pedidos) {
+      elementos();
+      var n = pedidos.length;
+      badge.textContent = n > 9 ? '9+' : String(n);
+      badge.hidden = n === 0;
+      btn.classList.toggle('is-alerta', n > 0);
+      if (pop && !pop.hidden) pintaPop(pedidos);
+    }
+
+    function busca() {
+      if (!BK.isAdmin()) return;
+      BK.listSolicitacoes().then(aplica).catch(function () {});
+    }
+
+    return {
+      ligar: function () {
+        elementos();
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (!pop.hidden) return fechaPop();
+          // Abre com o que já se sabe e busca a versão fresca.
+          BK.listSolicitacoes().then(function (ps) {
+            pintaPop(ps); aplica(ps);
+            pop.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+            document.addEventListener('click', foraDoPop, true);
+          }).catch(function () {
+            pintaPop([]); pop.hidden = false;
+          });
+        });
+      },
+      mostrar: function (on) {
+        elementos();
+        wrap.hidden = !on;
+        if (!on) { fechaPop(); badge.hidden = true; }
+      },
+      atualiza: busca,
+      aplica: aplica,          // usado pela aba Usuários, sem refetch
+      iniciaPoll: function () {
+        if (timer) return;
+        // A cada 60s enquanto a aba estiver visível e houver admin logado.
+        timer = setInterval(function () {
+          if (BK.isAdmin() && !document.hidden) busca();
+        }, 60000);
+      },
+    };
+  })();
+
+  window.AffemgNotif = Notif;
+
   // ---------- Init ----------
   document.addEventListener('DOMContentLoaded', function () {
     if (!BK || !BK.isEnabled()) return;
@@ -204,13 +449,22 @@
       openForm(null, function () { Usuarios.invalidate(); Usuarios.refresh(); });
     });
 
-    // A aba só existe para admin. Se o usuário sair ou trocar, ela some de novo.
+    Notif.ligar();
+    Notif.iniciaPoll();
+
+    // A aba e o sino só existem para admin. Se o usuário sair ou trocar, somem.
     BK.onAuth(function (user, admin) {
+      var ehAdmin = !!(user && admin);
       var tab = $('#tabUsuarios');
-      tab.hidden = !(user && admin);
+      tab.hidden = !ehAdmin;
+      Notif.mostrar(ehAdmin);
       Usuarios.invalidate();
-      if (tab.hidden && isVisible() && window.AffemgTabs) window.AffemgTabs.activate('criar');
-      else if (isVisible()) Usuarios.refresh();
+      if (!ehAdmin) {
+        if (isVisible() && window.AffemgTabs) window.AffemgTabs.activate('criar');
+      } else {
+        Notif.atualiza();
+        if (isVisible()) Usuarios.refresh();
+      }
     });
   });
 })();

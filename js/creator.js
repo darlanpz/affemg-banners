@@ -50,13 +50,23 @@
   // Exposto para o admin-ui tirar o usuário da aba "Usuários" ao deslogar.
   window.AffemgTabs = { activate: activateTab };
 
+  function irPara(nome) {
+    if (history.replaceState) history.replaceState(null, '', '#' + nome);
+    activateTab(nome);
+  }
+
   function initTabs() {
     document.querySelectorAll('.tab').forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        if (history.replaceState) history.replaceState(null, '', '#' + tab.dataset.tab);
-        activateTab(tab.dataset.tab);
-      });
+      tab.addEventListener('click', function () { irPara(tab.dataset.tab); });
     });
+
+    // A marca no topo funciona como atalho para o criador.
+    var home = $('#btnHome');
+    if (home) home.addEventListener('click', function () {
+      irPara('criar');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     activateTab((location.hash || '').replace('#', ''));
   }
 
@@ -77,6 +87,7 @@
         box.querySelectorAll('.choice').forEach(function (c) { c.classList.remove('is-sel'); });
         label.classList.add('is-sel');
         render();
+        anunciaMudanca();
       });
       box.appendChild(label);
     });
@@ -113,6 +124,7 @@
           text.innerHTML = 'Imagem carregada: <u>' + file.name + '</u> — clique para trocar';
           render();
           setLoading(false);
+          anunciaMudanca();
         };
         img.onerror = function () {
           setLoading(false);
@@ -147,8 +159,8 @@
 
   // ---------- Toggles ----------
   function initToggles() {
-    $('#tglEscurecer').addEventListener('change', function () { state.escurecer = this.checked; render(); });
-    $('#tglFooter').addEventListener('change', function () { state.footer = this.checked; render(); });
+    $('#tglEscurecer').addEventListener('change', function () { state.escurecer = this.checked; render(); anunciaMudanca(); });
+    $('#tglFooter').addEventListener('change', function () { state.footer = this.checked; render(); anunciaMudanca(); });
   }
 
   // ---------- Render + Download ----------
@@ -182,10 +194,55 @@
       .then(function () { load.fecha(); btn.textContent = label; btn.disabled = !state.imageHref; });
   }
 
+  // Avisa quem estiver ouvindo (hoje, o tutorial) que o banner mudou.
+  function anunciaMudanca() {
+    document.dispatchEvent(new CustomEvent('affemg:banner', { detail: copiaEstado() }));
+  }
+  function copiaEstado() {
+    return {
+      variante: state.variante, elemento: state.elemento,
+      escurecer: state.escurecer, footer: state.footer,
+      temImagem: !!state.imageHref,
+    };
+  }
+
   // Exposto para o backend-ui (botão Salvar) usar o estado atual do banner.
   window.AffemgCreator = {
     currentSVG: function () { return B.buildSVG(state); },
     hasImage: function () { return !!state.imageHref; },
+    estado: copiaEstado,
+
+    // Carrega uma imagem por URL (usado pelo tutorial, com a foto de exemplo).
+    usarImagem: function (url) {
+      return fetch(url)
+        .then(function (r) {
+          if (!r.ok) throw new Error('Não foi possível carregar a imagem de exemplo.');
+          return r.blob();
+        })
+        .then(function (blob) {
+          return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function (e) { resolve(e.target.result); };
+            reader.onerror = function () { reject(new Error('Falha ao ler a imagem.')); };
+            reader.readAsDataURL(blob);
+          });
+        })
+        .then(function (dataURI) {
+          return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () {
+              state.imageHref = dataURI;
+              $('#dropzone').classList.add('has-file');
+              $('#dropzoneText').innerHTML = 'Imagem de exemplo carregada';
+              render();
+              anunciaMudanca();
+              resolve();
+            };
+            img.onerror = function () { reject(new Error('Imagem de exemplo inválida.')); };
+            img.src = dataURI;
+          });
+        });
+    },
     suggestName: function () {
       var el = (B.ELEMENTOS.filter(function (e) { return e.id === state.elemento; })[0] || {}).nome || '';
       return 'Banner ' + el;
