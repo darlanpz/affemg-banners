@@ -20,17 +20,35 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "Secrets SUPABASE_URL / SUPABASE_ANON_KEY não configurados. Pulei o ping."
-            exit 0
+            echo "::error::Secrets SUPABASE_URL ou SUPABASE_ANON_KEY não estão configurados em Settings -> Secrets and variables -> Actions."
+            exit 1
           fi
-          # Consulta leve na tabela banners (conta como atividade no banco).
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            "$SUPABASE_URL/rest/v1/banners?select=id&limit=1" \
+
+          # Limpa espaços em branco e remove eventuais barras finais da URL
+          CLEAN_URL=$(echo "$SUPABASE_URL" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's:/*$::')
+
+          echo "Disparando ping para o Supabase..."
+          
+          # Consulta leve na tabela banners com retry automático (conta como atividade real no banco)
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            --retry 3 \
+            --retry-delay 5 \
+            --max-time 30 \
+            "$CLEAN_URL/rest/v1/banners?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
-          echo "HTTP $code"
-          # 200 (ok) ou 401/403 (RLS) ainda contam como atividade; falha só em erro de rede/5xx.
-          if [ "$code" -ge 500 ] || [ "$code" -eq 000 ]; then
-            echo "Ping falhou (HTTP $code)"; exit 1
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" || echo "curl_error")
+
+          echo "Código retornado: $code"
+
+          if [ "$code" = "curl_error" ]; then
+            echo "::error::Falha de conexão com o Supabase (curl retornou erro). Se o projeto estiver pausado no painel, despause-o manualmente primeiro."
+            exit 1
           fi
-          echo "Ping OK — projeto mantido ativo."
+
+          # 200/206/204 (OK) ou 401/403/404 (banco processou a requisição) contam como atividade ativa no Postgres
+          if [ "$code" -ge 500 ] || [ "$code" -eq 000 ]; then
+            echo "::error::Ping falhou com HTTP $code."
+            exit 1
+          fi
+
+          echo "Ping realizado com sucesso (HTTP $code) — projeto mantido ativo."
