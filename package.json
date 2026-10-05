@@ -1,0 +1,11 @@
+{
+  "name": "affemg-banners",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Criador e galeria de banners AFFEMG (frontend estático + Supabase)",
+  "scripts": {
+    "start": "npx --yes serve . -l 3000",
+    "dev": "npx --yes serve . -l 3000",
+    "migrate": "node migrate-curated.js"
+  }
+}

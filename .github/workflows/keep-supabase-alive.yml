@@ -31,24 +31,21 @@ jobs:
           
           # Consulta leve na tabela banners com retry automático (conta como atividade real no banco)
           code=$(curl -sS -o /dev/null -w "%{http_code}" \
-            --retry 3 \
-            --retry-delay 5 \
-            --max-time 30 \
+            --retry 3 --retry-delay 5 --max-time 30 \
             "$CLEAN_URL/rest/v1/banners?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" || echo "curl_error")
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY") || code="000"
 
           echo "Código retornado: $code"
 
-          if [ "$code" = "curl_error" ]; then
-            echo "::error::Falha de conexão com o Supabase (curl retornou erro). Se o projeto estiver pausado no painel, despause-o manualmente primeiro."
-            exit 1
-          fi
-
-          # 200/206/204 (OK) ou 401/403/404 (banco processou a requisição) contam como atividade ativa no Postgres
-          if [ "$code" -ge 500 ] || [ "$code" -eq 000 ]; then
-            echo "::error::Ping falhou com HTTP $code."
-            exit 1
-          fi
+          # Só 200/206 provam que o Postgres respondeu. 000 (sem conexão), 5xx e 52x
+          # (Cloudflare: origem fora do ar) indicam projeto pausado ou banco fora.
+          case "$code" in
+            200|206) ;;
+            *)
+              echo "::error::Ping falhou (HTTP $code). Provavelmente o projeto está PAUSADO: abra o painel do Supabase e clique em Restore project."
+              exit 1
+              ;;
+          esac
 
           echo "Ping realizado com sucesso (HTTP $code) — projeto mantido ativo."
