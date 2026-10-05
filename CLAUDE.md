@@ -31,7 +31,7 @@ Idioma do projeto e da UI: português (pt-BR). Detalhes: `README.md` e `SUPABASE
 | `js/admin-ui.js` | Aba Usuários / solicitações / notificações |
 | `js/onboarding.js` | Boas-vindas + tutorial |
 | `js/vendor/` | fflate e supabase-js embutidos (sem CDN) |
-| `assets/fonts/` | Material Icons Outlined (woff2, auto-hospedado). Uso: `<span class="mi" aria-hidden="true">nome_do_icone</span>` |
+| `assets/fonts/` | Material Symbols Outlined (woff2 variável, auto-hospedado, **só os ícones usados**). Uso: `<span class="mi" aria-hidden="true">nome</span>`; espessura em `.mi` (`'wght' 300`, de 100 a 700) |
 | `supabase/sql/` | `usuarios.sql`, `solicitacoes.sql` (rodar no SQL Editor) |
 | `supabase/functions/admin-users/index.ts` | Edge Function (Deno): criar/remover usuários, aviso por e-mail via SMTP |
 | `supabase/emails/` | Templates HTML dos e-mails do Auth |
@@ -50,7 +50,8 @@ Idioma do projeto e da UI: português (pt-BR). Detalhes: `README.md` e `SUPABASE
 ## Rodar e publicar
 
 ```bash
-npm start        # serve em http://localhost:3000 (usa npx serve; não há dependências)
+npm start        # serve em http://localhost:3000 (npx serve)
+npm run dev      # igual, mas com live reload (npx live-server)
 ```
 O `package.json` existe só para os scripts; o site em si não tem build.
 Precisa de servidor HTTP (usa `fetch` e sessão). Deploy estático (GitHub Pages em `darlanpz.github.io/affemg-banners/`).
@@ -62,3 +63,14 @@ Novas URLs de produção devem ser adicionadas em Supabase → Authentication �
 - Commits em português, no estilo `fix(ci): ...` / frases curtas.
 - Nunca colocar a `service_role` no front; a anon key e a Turnstile site key são públicas.
 - Mudou SQL/Edge Function? Atualize também `SUPABASE-SETUP.md` e lembre que o deploy no Supabase é manual (painel).
+
+## Ícones (Material Symbols)
+
+O woff2 contém só os ícones em uso (4 KB). **Ao usar um ícone novo, regenere a fonte** com a lista completa
+em ordem alfabética (ícones atuais: check_circle, close, download, error, help, info, notifications, save, star, upload, visibility, visibility_off, zoom_in):
+
+```bash
+CSS=$(curl -sS -A "Mozilla/5.0 Chrome/124.0.0.0" "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&icon_names=<lista,ordenada>&display=block")
+curl -sS -o assets/fonts/material-symbols-outlined.woff2 "$(echo "$CSS" | grep -o 'https://[^)]*')"
+```
+Os nomes são os do catálogo Material **Symbols** (ex.: `notifications`, não `notifications_none`).

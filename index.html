@@ -7,7 +7,7 @@
   <meta name="description" content="Baixe banners prontos ou crie novos banners para o app AFFEMG.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="apple-touch-icon" href="assets/favicon.svg">
-  <link rel="preload" href="assets/fonts/material-icons-outlined.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -28,7 +28,7 @@
       <div class="topbar__right">
         <div class="notif" id="notif" hidden>
           <button type="button" class="notif__btn" id="btnNotif" aria-label="Notificações" aria-haspopup="true" aria-expanded="false">
-            <span class="mi" aria-hidden="true">notifications_none</span>
+            <span class="mi" aria-hidden="true">notifications</span>
             <span class="notif__badge" id="notifBadge" hidden>0</span>
           </button>
           <div class="notifpop" id="notifPop" role="dialog" aria-label="Notificações" hidden></div>
@@ -45,29 +45,31 @@
         <!-- Controles -->
         <form class="controls" id="controls" autocomplete="off">
           <fieldset class="field">
-            <legend>1. Imagem de fundo</legend>
+            <legend>Imagem de fundo</legend>
             <label class="dropzone" id="dropzone" tabindex="0">
               <input type="file" id="fileInput" accept="image/*" hidden>
-              <span class="dropzone__icon mi" aria-hidden="true">upload</span>
-              <span class="dropzone__text" id="dropzoneText">
-                Arraste uma imagem aqui ou <u>clique para escolher</u>
+              <span class="dropzone__icon" aria-hidden="true"><span class="mi">upload</span></span>
+              <span class="dropzone__body">
+                <span class="dropzone__text" id="dropzoneText">
+                  Arraste uma imagem aqui ou <u>clique para escolher</u>
+                </span>
+                <span class="dropzone__hint">Somente imagens em JPG ou PNG</span>
               </span>
-              <span class="dropzone__hint">JPG ou PNG · o recorte usa o centro (1024×640)</span>
             </label>
           </fieldset>
 
           <fieldset class="field">
-            <legend>2. Modelo de fundo</legend>
+            <legend>Modelo de fundo</legend>
             <div class="choices" id="variantes"></div>
           </fieldset>
 
           <fieldset class="field">
-            <legend>3. Elemento de marca</legend>
+            <legend>Elemento de marca</legend>
             <div class="choices choices--elem" id="elementos"></div>
           </fieldset>
 
           <fieldset class="field">
-            <legend>4. Acabamento</legend>
+            <legend>Acabamento</legend>
             <label class="switch">
               <input type="checkbox" id="tglEscurecer">
               <span>Escurecer imagem (40%)</span>
@@ -83,9 +85,9 @@
         <div class="preview-col">
           <div class="preview" id="preview" aria-label="Pré-visualização do banner"></div>
           <div class="preview-actions">
-            <button type="button" class="btn btn--primary" id="btnDownload">Baixar WebP</button>
-            <button type="button" class="btn btn--ghost" id="btnSave" hidden>Salvar no projeto</button>
-            <span class="preview-meta">1024 × 640 · WebP</span>
+            <span class="preview-meta">1024x640 - WebP</span>
+            <button type="button" class="btn btn--primary" id="btnDownload"><span class="mi" aria-hidden="true">download</span>Salvar imagem</button>
+            <button type="button" class="btn btn--primary" id="btnSave" hidden><span class="mi" aria-hidden="true">save</span>Salvar no projeto</button>
           </div>
         </div>
       </div>
@@ -121,7 +123,7 @@
 
   <!-- Botão flutuante do tutorial -->
   <button type="button" class="fab" id="btnTutorial" aria-label="Como usar a ferramenta">
-    <span class="mi fab__icon" aria-hidden="true">help_outline</span>
+    <span class="mi fab__icon" aria-hidden="true">help</span>
     <span class="fab__txt">Como usar</span>
   </button>
 

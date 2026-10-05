@@ -123,7 +123,7 @@
 
   var ICONES = {
     ok: '<span class="mi" aria-hidden="true">check_circle</span>',
-    erro: '<span class="mi" aria-hidden="true">error_outline</span>',
+    erro: '<span class="mi" aria-hidden="true">error</span>',
     info: '<span class="mi" aria-hidden="true">info</span>',
   };
 
@@ -652,6 +652,8 @@
     if (!BK || !BK.isEnabled()) return;
     $('#tabSalvos').hidden = false;
     var save = $('#btnSave'); save.hidden = false;
+    // Com o salvar disponível, ele é a ação principal e o download vira secundário.
+    $('#btnDownload').classList.replace('btn--primary', 'btn--ghost');
     save.addEventListener('click', openSave);
 
     BK.onAuth(function (user) {

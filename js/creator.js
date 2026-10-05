@@ -174,7 +174,7 @@
     var btn = $('#btnDownload');
     var svg = B.buildSVG(state);
     btn.disabled = true;
-    var label = btn.textContent;
+    var label = btn.innerHTML;
     btn.textContent = 'Gerando…';
     var load = window.AffemgUI && AffemgUI.carregando
       ? AffemgUI.carregando('Gerando o WebP…') : { fecha: function () {} };
@@ -191,7 +191,7 @@
         if (window.AffemgUI) AffemgUI.toast('Banner gerado. O download já começou.', 'ok');
       })
       .catch(function (err) { aviso('Não foi possível gerar o WebP', err.message); })
-      .then(function () { load.fecha(); btn.textContent = label; btn.disabled = !state.imageHref; });
+      .then(function () { load.fecha(); btn.innerHTML = label; btn.disabled = !state.imageHref; });
   }
 
   // Avisa quem estiver ouvindo (hoje, o tutorial) que o banner mudou.
