@@ -85,11 +85,8 @@
     return '<div class="field-pass">' +
       '<input type="password" id="' + id + '" autocomplete="' + (autocomplete || 'current-password') + '">' +
       '<button type="button" class="field-pass__eye" data-eye="' + id + '" aria-label="Mostrar senha" title="Mostrar senha">' +
-        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
-          '<path class="eye-open" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/>' +
-          '<circle class="eye-open" cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.8"/>' +
-          '<path class="eye-off" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3 3l18 18"/>' +
-        '</svg>' +
+        '<span class="mi eye-open" aria-hidden="true">visibility</span>' +
+        '<span class="mi eye-off" aria-hidden="true">visibility_off</span>' +
       '</button></div>';
   }
 
@@ -125,9 +122,9 @@
   }
 
   var ICONES = {
-    ok: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M4 12.5l5 5L20 6.5"/></svg>',
-    erro: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 6.5v7M12 17.4v.2"/></svg>',
-    info: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 10.5v7M12 6.6v.2"/></svg>',
+    ok: '<span class="mi" aria-hidden="true">check_circle</span>',
+    erro: '<span class="mi" aria-hidden="true">error_outline</span>',
+    info: '<span class="mi" aria-hidden="true">info</span>',
   };
 
   function toast(texto, tipo) {
@@ -136,7 +133,7 @@
     t.innerHTML =
       '<span class="toast__icon">' + ICONES[tipo] + '</span>' +
       '<span class="toast__text">' + esc(texto) + '</span>' +
-      '<button type="button" class="toast__x" aria-label="Fechar">&times;</button>';
+      '<button type="button" class="toast__x" aria-label="Fechar"><span class="mi" aria-hidden="true">close</span></button>';
     toastArea().appendChild(t);
 
     var saindo = false;
@@ -525,8 +522,8 @@
     var src = BK.publicUrl(b.storage_path);
     var titulo = esc(b.titulo);
     card.innerHTML =
-      (b.recomendado ? '<span class="badge-reco">★ Recomendado</span>' : '') +
-      '<button type="button" class="gcard__imgbtn" aria-label="Ampliar"><img class="gcard__img" src="' + src + '" alt="' + titulo + '" loading="lazy"><span class="gcard__zoom">⛶ Ampliar</span></button>' +
+      (b.recomendado ? '<span class="badge-reco"><span class="mi" aria-hidden="true">star</span> Recomendado</span>' : '') +
+      '<button type="button" class="gcard__imgbtn" aria-label="Ampliar"><img class="gcard__img" src="' + src + '" alt="' + titulo + '" loading="lazy"><span class="gcard__zoom"><span class="mi" aria-hidden="true">zoom_in</span> Ampliar</span></button>' +
       '<figcaption class="gcard__body">' +
         '<span class="gcard__name">' + titulo + '<br><small class="gcard__by">' + esc(b.owner_email || '') + '</small></span>' +
         '<span class="gcard__acts">' +

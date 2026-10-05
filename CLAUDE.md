@@ -31,6 +31,7 @@ Idioma do projeto e da UI: português (pt-BR). Detalhes: `README.md` e `SUPABASE
 | `js/admin-ui.js` | Aba Usuários / solicitações / notificações |
 | `js/onboarding.js` | Boas-vindas + tutorial |
 | `js/vendor/` | fflate e supabase-js embutidos (sem CDN) |
+| `assets/fonts/` | Material Icons Outlined (woff2, auto-hospedado). Uso: `<span class="mi" aria-hidden="true">nome_do_icone</span>` |
 | `supabase/sql/` | `usuarios.sql`, `solicitacoes.sql` (rodar no SQL Editor) |
 | `supabase/functions/admin-users/index.ts` | Edge Function (Deno): criar/remover usuários, aviso por e-mail via SMTP |
 | `supabase/emails/` | Templates HTML dos e-mails do Auth |

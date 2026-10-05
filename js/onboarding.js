@@ -203,7 +203,7 @@
     caixa.innerHTML =
       '<div class="tour__top">' +
         '<span class="tour__count">Passo ' + (passoAtual + 1) + ' de ' + passos.length + '</span>' +
-        '<button type="button" class="tour__x" aria-label="Sair do tutorial">&times;</button>' +
+        '<button type="button" class="tour__x" aria-label="Sair do tutorial"><span class="mi" aria-hidden="true">close</span></button>' +
       '</div>' +
       '<h4 class="tour__title">' + passo.titulo + '</h4>' +
       '<p class="tour__text">' + passo.texto + '</p>' +
