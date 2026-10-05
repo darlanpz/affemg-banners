@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="apple-touch-icon" href="assets/favicon.svg">
   <link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2?v=8" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2?v=9" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -136,6 +136,12 @@
       <p id="usuariosMsg" class="empty" hidden></p>
     </section>
   </main>
+
+  <!-- Mobile: rodapé fixo com um pedacinho do banner ao vivo (fora do painel: o painel tem transform e prenderia o fixed). -->
+  <div class="peekbar" id="peekbar">
+    <div class="peekbar__thumb" id="peekThumb" aria-hidden="true"></div>
+    <button type="button" class="btn btn--primary" id="btnPeek"><span class="mi" aria-hidden="true">arrow_downward</span>Ver banner</button>
+  </div>
 
   <footer class="sitefoot wrap">
     Ferramenta interna · Banners AFFEMG

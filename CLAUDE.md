@@ -12,6 +12,7 @@ Idioma do projeto e da UI: português (pt-BR). Detalhes: `README.md` e `SUPABASE
 - **Banners salvos** (aba `#salvos`, exige login): galeria por categoria, recomendada em destaque, conjuntos `.zip`.
 - **Usuários** (só admins): cadastrar/remover/editar usuários, aprovar solicitações de acesso, sino de notificações.
 - **Onboarding**: tutorial guiado interativo no primeiro acesso (botão "Como usar").
+- **Mobile (≤820px)**: rodapé fixo (`#peekbar`) com um pedaço do banner ao vivo e o botão "Ver banner"; aparece quando o preview sai da tela (IntersectionObserver em `creator.js`). Fica fora do painel da aba porque o painel tem `transform` e prenderia o `position: fixed`.
 - **Renderização**: o banner é montado como SVG auto-contido (`svg-builder.js`) e rasterizado via
   `<canvas>` + `toBlob('image/webp')` (`webp.js`). Sem recursos externos nem `foreignObject`, para o canvas não ficar *tainted*.
 
@@ -68,7 +69,7 @@ Novas URLs de produção devem ser adicionadas em Supabase → Authentication �
 ## Ícones (Material Symbols)
 
 O woff2 contém só os ícones em uso (4 KB). **Ao usar um ícone novo, regenere a fonte** com a lista completa
-em ordem alfabética (ícones atuais: add_photo_alternate, arrow_back, arrow_forward, person_add, play_arrow, restart_alt, tune, check, check_circle, close, download, error, help, info, login, logout, notifications, save, star, upload, visibility, visibility_off, zoom_in):
+em ordem alfabética (ícones atuais: add_photo_alternate, arrow_back, arrow_downward, arrow_forward, person_add, play_arrow, restart_alt, tune, check, check_circle, close, download, error, help, info, login, logout, notifications, save, star, upload, visibility, visibility_off, zoom_in):
 
 ```bash
 CSS=$(curl -sS -A "Mozilla/5.0 Chrome/124.0.0.0" "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&icon_names=<lista,ordenada>&display=block")

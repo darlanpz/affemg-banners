@@ -34,7 +34,7 @@
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  src: url(../assets/fonts/material-symbols-outlined.woff2?v=8) format('woff2');
+  src: url(../assets/fonts/material-symbols-outlined.woff2?v=9) format('woff2');
 }
 .mi {
   font-family: 'Material Symbols Outlined';
@@ -837,10 +837,10 @@ body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: no
 @media (max-width: 860px) {
   /* Cabeçalho em duas linhas: marca + ações em cima, abas embaixo (largura total). Sem sticky: poupa tela. */
   .topbar { position: static; }
-  .topbar__inner {
+  .topbar .topbar__inner {
     display: grid; grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "brand right" "tabs tabs";
-    gap: 10px 12px; min-height: 0; padding-top: 12px; padding-bottom: 12px;
+    gap: 12px; min-height: 0; padding-top: 16px; padding-bottom: 16px;
   }
   .brand { grid-area: brand; min-width: 0; }
   .brand__sub { display: none; }
@@ -852,7 +852,7 @@ body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: no
 }
 
 @media (max-width: 560px) {
-  .wrap { padding: 0 14px; }
+  .wrap { padding-left: 16px; padding-right: 16px; }
   .controls { padding: 18px; gap: 28px; }
 
   /* Barra de ações do preview: informação em cima e botões empilhados, na largura toda. */
@@ -897,4 +897,40 @@ body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: no
 @media (max-width: 420px) {
   .wel2__actions { flex-direction: column-reverse; gap: 8px; }
   .wel2__actions .btn { width: 100%; }
+}
+
+/* Telas muito estreitas: o nome da marca quebra em duas linhas em vez de encostar no sino. */
+@media (max-width: 420px) {
+  .brand strong { white-space: normal; line-height: 1.2; }
+  .brand__txt { min-width: 0; }
+}
+
+/* ---------- Mobile: rodapé fixo com um pedacinho do banner ---------- */
+.peekbar { display: none; }
+@media (max-width: 820px) {
+  .peekbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--white); border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, .08);
+    transform: translateY(110%); visibility: hidden;
+    transition: transform .25s ease, visibility .25s;
+  }
+  body[data-tab="criar"].has-peek .peekbar { transform: none; visibility: visible; }
+  body.has-modal .peekbar, body.has-tour .peekbar, body.has-lightbox .peekbar, body.has-loading .peekbar { display: none; }
+
+  /* Só um pedaço do banner (recorte ampliado no centro), esmaecendo para a direita e para baixo. */
+  .peekbar__thumb {
+    position: relative; flex: 1 1 auto; min-width: 0; max-width: 220px; height: 52px; overflow: hidden;
+    border-radius: var(--radius); background: var(--bg);
+    -webkit-mask-image: linear-gradient(to right, #000 55%, transparent), linear-gradient(to bottom, #000 45%, transparent);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+    mask-image: linear-gradient(to right, #000 55%, transparent), linear-gradient(to bottom, #000 45%, transparent);
+  }
+  .peekbar__thumb svg { position: absolute; left: -70px; top: -14px; width: 340px; height: auto; display: block; }
+  .peekbar .btn { flex: 0 0 auto; }
+
+  /* Com a barra visível, o botão "Como usar" sobe para não ficar por cima dela. */
+  body[data-tab="criar"].has-peek .fab { bottom: calc(84px + env(safe-area-inset-bottom)); }
 }

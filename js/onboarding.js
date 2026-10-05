@@ -649,9 +649,7 @@
     if (btn) btn.addEventListener('click', function () { comeca(); });
 
     // Primeiro acesso: espera um pouco para a tela assentar.
-    // Em desenvolvimento (localhost) as boas-vindas abrem sempre, para testar; em produção só no primeiro acesso.
-    var dev = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-    if (dev || !jaViu()) setTimeout(boasVindas, 700);
+    if (!jaViu()) setTimeout(boasVindas, 700);
   });
 
   window.AffemgTutorial = { comeca: comeca, boasVindas: boasVindas };

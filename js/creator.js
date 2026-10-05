@@ -43,6 +43,7 @@
       panel.classList.toggle('is-active', on);
       panel.hidden = !on;
     });
+    document.body.setAttribute('data-tab', name);
     if (name === 'salvos' && window.AffemgSalvos) window.AffemgSalvos.refresh();
     if (name === 'usuarios' && window.AffemgUsuarios) window.AffemgUsuarios.refresh();
   }
@@ -243,7 +244,11 @@
 
   // ---------- Render + Download ----------
   function render() {
-    $('#preview').innerHTML = B.buildSVG(state);
+    var svg = B.buildSVG(state);
+    $('#preview').innerHTML = svg;
+    // Mesmo banner na barra do mobile; ids com outro prefixo para não colidirem com os do preview.
+    var pk = $('#peekThumb');
+    if (pk) pk.innerHTML = svg.replace(/(id="|#|url\(#)aff/g, '$1pk');
     // O guia some com a imagem ou quando há um elemento de marca escolhido; "Sem elemento" sem imagem o traz de volta.
     $('#previewEmpty').hidden = !!state.imageHref || state.elemento !== 'padrao';
     $('#btnDownload').disabled = !state.imageHref;
@@ -330,6 +335,19 @@
     },
   };
 
+  // Barra fixa do mobile: aparece só quando o preview não está na tela; o botão leva até ele.
+  function ligaPeek() {
+    var alvo = $('#preview'), btn = $('#btnPeek');
+    if (!alvo || !btn) return;
+    btn.addEventListener('click', function () {
+      $('.preview-col').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    if (!('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function (es) {
+      document.body.classList.toggle('has-peek', !es[0].isIntersecting);
+    }, { threshold: 0.3 }).observe(alvo);
+  }
+
   // Volta modelo, elemento e acabamento ao padrão. A imagem enviada é mantida.
   function restaurar() {
     state.variante = '01';
@@ -349,6 +367,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     initTabs();
     $('#btnReset').addEventListener('click', restaurar);
+    ligaPeek();
     buildChoices('variantes', B.VARIANTES, 'variante', ilustraVariante);
     buildChoices('elementos', B.ELEMENTOS, 'elemento', ilustraElemento);
     ligaAcabamento();
