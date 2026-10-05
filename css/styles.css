@@ -34,7 +34,7 @@
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  src: url(../assets/fonts/material-symbols-outlined.woff2?v=9) format('woff2');
+  src: url(../assets/fonts/material-symbols-outlined.woff2?v=11) format('woff2');
 }
 .mi {
   font-family: 'Material Symbols Outlined';
@@ -261,14 +261,16 @@ body {
 /* ---------- Gallery ---------- */
 .gallery-head h1 { font-size: 22px; margin: 0 0 2px; }
 .gallery-head p { margin: 0 0 24px; color: var(--muted); }
-.gallery { display: flex; flex-direction: column; gap: 34px; }
+.gallery { display: flex; flex-direction: column; gap: 28px; }
 
 .block-title { font-size: 13px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .05em; color: var(--muted); margin: 0 0 12px; }
 
 /* Sets */
-.sets { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg);
-  padding: 18px 18px 20px; box-shadow: var(--shadow); }
+.sets { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px; }
+.sets .block-title { font-size: 16px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--ink); margin: 0 0 16px; }
+.setcard { transition: border-color .15s ease; }
+.setcard:hover { border-color: #b9c6d1; }
 .sets__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .setcard { border: 1.5px solid var(--line); border-radius: var(--radius-lg); padding: 14px;
   display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
@@ -289,15 +291,16 @@ body {
 .setcard--wide { grid-column: 1 / -1; }
 
 /* Seção (assunto) */
-.gsec__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
-.gsec__title { font-size: 18px; margin: 0; }
+.gsec { margin: 0; padding: 0; }
+.gsec__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; padding: 0; }
+.gsec__title { font-size: 18px; margin: 0; padding: 0; }
 .gsec__prefix { color: var(--muted); font-weight: 600; }
-.gsec__desc { margin: 2px 0 14px; color: var(--muted); font-size: 14px; max-width: 70ch; }
-.gsec__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 10px; margin-top: 12px; }
+.gsec__desc { margin: 0 0 10px; color: var(--muted); font-size: 14px; max-width: 70ch; }
+.gsec__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; margin: 0; padding: 0; }
 
 /* Card de banner */
 .gcard {
-  position: relative; background: var(--white); border: 1px solid var(--line);
+  position: relative; margin: 0; min-width: 0; background: var(--white); border: 1px solid var(--line);
   border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow);
   display: flex; flex-direction: column;
 }
@@ -315,7 +318,7 @@ body {
 .gcard__imgbtn:focus-visible .gcard__zoom { opacity: 1; }
 .gcard__imgbtn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .gcard__body { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.gcard__name { font-size: 14px; font-weight: 600; }
+.gcard__name { font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .badge-reco {
   position: absolute; top: 10px; left: 10px; z-index: 1;
   background: #f5c518; color: #12242f; font-size: 11.5px; font-weight: 700;
@@ -392,7 +395,6 @@ body.has-lightbox { overflow: hidden; }
 
 /* ---------- Cards salvos ---------- */
 .gcard__acts { display: flex; align-items: center; gap: 8px; }
-.gcard__by { color: var(--muted); font-weight: 400; font-size: 11.5px; }
 
 /* ---------- Modal (login / salvar) ---------- */
 body.has-modal { overflow: hidden; }
@@ -848,6 +850,8 @@ body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: no
   .brand strong { white-space: nowrap; }
   .tabs { grid-area: tabs; width: 100%; }
   .tab { flex: 1; text-align: center; padding: 8px 10px; }
+  /* Logado: o e-mail não cabe ao lado da marca; fica só o botão Sair. */
+  .auth__user { display: none; }
   .topbar__right { grid-area: right; }
 }
 
@@ -933,4 +937,157 @@ body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: no
 
   /* Com a barra visível, o botão "Como usar" sobe para não ficar por cima dela. */
   body[data-tab="criar"].has-peek .fab { bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+
+/* ---------- Banners salvos para quem não entrou: CTA com cena animada ---------- */
+.vitrine { max-width: 460px; margin: 0 auto; text-align: center; }
+/* Centraliza o CTA na área livre da página. */
+#salvos:has(.vitrine) { min-height: calc(100vh - 260px); justify-content: center; }
+.vitrine__art {
+  position: relative; margin: 0 auto 22px; padding: 18px 16px 62px; width: min(100%, 380px);
+  background: var(--blue-050); border-radius: var(--radius-lg); overflow: hidden;
+}
+.vt-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.vt-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.vt-chip {
+  align-self: flex-start; padding: 3px 8px; border-radius: var(--radius); background: var(--white);
+  color: var(--blue); font-size: 11px; font-weight: 700; letter-spacing: .01em; box-shadow: 0 1px 2px rgba(18, 36, 47, .08);
+}
+.vt-card {
+  position: relative; display: block; aspect-ratio: 16 / 10; border-radius: var(--radius); overflow: hidden;
+  box-shadow: 0 4px 10px rgba(18, 36, 47, .14);
+}
+.vt-card::after {   /* faixa escura do rodapé, como nos banners reais */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 38%;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .55));
+}
+.vt-card--a { background: linear-gradient(160deg, #6fbdf2, #1d6fae); }
+.vt-card--b { background: linear-gradient(160deg, #3f8fd0, #0a3a66); }
+.vt-card--c { background: linear-gradient(160deg, #8fd0e8, #2a7fa6); }
+.vt-card--reco { outline: 2px solid #fdc917; outline-offset: 0; }
+.vt-star {
+  position: absolute; z-index: 2; left: 16px; top: 52px; width: 24px; height: 24px; margin: 0;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: #fdc917; color: #12242f; box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+}
+.vt-star .mi { font-size: 15px; font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+.vt-dock {
+  position: absolute; left: 16px; right: 16px; bottom: 14px; height: 38px; padding: 0 12px; gap: 10px;
+  display: flex; align-items: center; background: var(--blue); color: #fff; border-radius: var(--radius);
+  box-shadow: 0 6px 14px rgba(0, 96, 166, .28);
+}
+.vt-dock__ico { position: relative; width: 20px; height: 20px; flex: 0 0 auto; }
+.vt-dock__ico .mi { position: absolute; inset: 0; font-size: 20px; }
+.vt-dock__ok { opacity: 0; }
+.vt-dock__txt { font-size: 12.5px; font-weight: 700; }
+.vt-dock__bar { flex: 1 1 auto; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .28); overflow: hidden; }
+.vt-dock__bar i { display: block; height: 100%; background: #fff; border-radius: 4px; transform-origin: left; }
+.vitrine__title { margin: 0 0 8px; font-size: 22px; line-height: 1.2; letter-spacing: -.01em; }
+.vitrine__sub { margin: 0 0 22px; font-size: 14.5px; color: var(--muted); line-height: 1.5; }
+.vitrine__acts { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+
+/* Movimento (laço de ~9s): cartões entram por categoria, uma ganha a estrela de recomendado,
+   o botão de download sobe, enche e confirma. Sem movimento, fica no quadro final. */
+@media (prefers-reduced-motion: no-preference) {
+  .vt-chip { animation: vt-chip 9s ease infinite both; }
+  .vt-col--2 .vt-chip { animation-delay: .2s; } .vt-col--3 .vt-chip { animation-delay: .4s; }
+  .vt-card { animation: vt-card 9s cubic-bezier(.2, .8, .3, 1) infinite both; }
+  .vt-col--1 .vt-card:nth-child(3) { animation-delay: .25s; }
+  .vt-col--2 .vt-card:nth-child(2) { animation-delay: .45s; } .vt-col--2 .vt-card:nth-child(3) { animation-delay: .6s; }
+  .vt-col--3 .vt-card:nth-child(2) { animation-delay: .8s; } .vt-col--3 .vt-card:nth-child(3) { animation-delay: .95s; }
+  .vt-card--reco { animation: vt-card 9s cubic-bezier(.2, .8, .3, 1) infinite both, vt-reco 9s ease infinite both; }
+  .vt-star { animation: vt-star 9s ease infinite both; }
+  .vt-dock { animation: vt-dock 9s cubic-bezier(.2, .8, .3, 1) infinite both; }
+  .vt-dock__bar i { animation: vt-prog 9s ease-in-out infinite both; }
+  .vt-dock__dl { animation: vt-dl 9s ease infinite both; }
+  .vt-dock__ok { animation: vt-ok 9s ease infinite both; }
+}
+@keyframes vt-chip { 0%, 3% { opacity: 0; transform: translateY(-6px); } 10%, 92% { opacity: 1; transform: none; } 98%, 100% { opacity: 0; } }
+@keyframes vt-card { 0%, 4% { opacity: 0; transform: translateY(16px) scale(.92); } 12%, 92% { opacity: 1; transform: none; } 98%, 100% { opacity: 0; } }
+@keyframes vt-reco { 0%, 38% { outline-color: transparent; } 44%, 92% { outline-color: #fdc917; } 100% { outline-color: transparent; } }
+@keyframes vt-star { 0%, 36% { opacity: 0; transform: scale(0) rotate(-40deg); } 42% { opacity: 1; transform: scale(1.3) rotate(8deg); } 46%, 92% { opacity: 1; transform: none; } 98%, 100% { opacity: 0; } }
+@keyframes vt-dock { 0%, 50% { opacity: 0; transform: translateY(120%); } 58%, 92% { opacity: 1; transform: none; } 98%, 100% { opacity: 0; transform: translateY(40%); } }
+@keyframes vt-prog { 0%, 60% { transform: scaleX(0); } 80%, 100% { transform: scaleX(1); } }
+@keyframes vt-dl { 0%, 82% { opacity: 1; transform: none; } 86%, 100% { opacity: 0; transform: translateY(6px); } }
+@keyframes vt-ok { 0%, 84% { opacity: 0; transform: scale(0); } 90% { opacity: 1; transform: scale(1.25); } 93%, 100% { opacity: 1; transform: none; } }
+
+/* ---------- Banners salvos (logado): título e conjuntos lado a lado no desktop ---------- */
+.salvos-top {
+  display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); gap: 32px; align-items: start;
+  margin-bottom: 34px;
+}
+.salvos-top:has(#salvosSets:empty) { grid-template-columns: minmax(0, 1fr); }
+.salvos-top:has(.gallery-head[hidden]) { display: none; }
+.salvos-top .gallery-head p { margin-bottom: 0; max-width: 56ch; }
+@media (max-width: 900px) {
+  .salvos-top { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
+
+/* ---------- Carregamento do login: logo pulsando dentro de um anel que gira ---------- */
+.modal__box { position: relative; }
+.modal__busy {
+  position: absolute; inset: 0; z-index: 5; border-radius: inherit;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background: rgba(255, 255, 255, .97); text-align: center; padding: 20px;
+}
+.busy__logo { position: relative; width: 84px; height: 84px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; }
+.busy__ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.busy__track, .busy__arc { fill: none; stroke-width: 4; }
+.busy__track { stroke: var(--blue-050); }
+.busy__arc { stroke: var(--blue); stroke-linecap: round; stroke-dasharray: 70 170; transform-origin: 42px 42px; }
+.busy__mark { position: relative; display: block; }
+.busy__pulse { position: absolute; inset: 14px; border-radius: 50%; background: var(--blue); opacity: 0; }
+.busy__title { font-size: 17px; letter-spacing: -.01em; }
+.busy__sub { font-size: 13px; color: var(--muted); }
+.busy__bar { margin-top: 14px; width: 132px; height: 4px; border-radius: 4px; background: var(--blue-050); overflow: hidden; }
+.busy__bar i { display: block; width: 42%; height: 100%; border-radius: 4px; background: var(--blue); }
+.modal__box.is-shake { animation: busy-shake .4s ease both; }
+@media (prefers-reduced-motion: no-preference) {
+  .modal__busy { animation: aff-fade-in .2s ease both; }
+  .busy__arc { animation: busy-spin 1.1s cubic-bezier(.5, .1, .5, .9) infinite; }
+  .busy__mark { animation: busy-beat 1.6s ease-in-out infinite; }
+  .busy__pulse { animation: busy-pulse 1.8s ease-out infinite; }
+  .busy__pulse--2 { animation-delay: .9s; }
+  .busy__bar i { animation: busy-bar 1.3s ease-in-out infinite; }
+}
+@keyframes busy-spin { to { transform: rotate(360deg); } }
+@keyframes busy-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+@keyframes busy-pulse { 0% { transform: scale(.6); opacity: .22; } 100% { transform: scale(1.45); opacity: 0; } }
+@keyframes busy-bar { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+@keyframes busy-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+
+/* ---------- Banners prontos (grupos) no mobile ---------- */
+@media (max-width: 560px) {
+  .gallery { gap: 22px; }
+  .gsec__title { font-size: 16px; }
+  .gsec__grid { grid-template-columns: minmax(0, 1fr); }
+  /* Nome em cima, botões lado a lado na largura toda (alvos de toque maiores). */
+  .gcard__body { flex-direction: column; align-items: stretch; gap: 10px; }
+  .gcard__acts { width: 100%; }
+  .gcard__acts .btn { flex: 1 1 0; }
+  .gcard:hover { transform: none; }
+}
+
+/* ---------- Cabeçalho (logado): "Usuários" como botão ao lado de "Sair" ---------- */
+.auth { display: contents; }          /* e-mail e Sair viram itens do mesmo grupo dos botões */
+.topbar__right .notif { order: 1; }
+.auth__user { order: 2; }
+#tabUsuarios { order: 3; }
+.auth .hdr-btn--sair { order: 4; }
+.hdr-btn[hidden] { display: none; }
+.hdr-btn.is-active { background: var(--blue-050); border-color: var(--blue); color: var(--blue); }
+
+/* Celular: só o ícone, no mesmo estilo do botão de notificações (46x46, sem borda). */
+@media (max-width: 860px) {
+  #tabUsuarios { width: 46px; padding: 0; border: 0; background: transparent; }
+  #tabUsuarios .mi { margin: 0; }
+  #tabUsuarios .hdr-btn__txt { display: none; }
+  #tabUsuarios:hover { background: var(--bg); }
+  #tabUsuarios.is-active { background: var(--blue-050); color: var(--blue); }
+}
+/* O "Sair" também vira ícone em telas muito estreitas, para caber ao lado dos outros. */
+@media (max-width: 420px) {
+  .hdr-btn--sair { width: 46px; padding: 0; }
+  .hdr-btn--sair .mi { margin: 0; }
+  .hdr-btn--sair .hdr-btn__txt { display: none; }
 }

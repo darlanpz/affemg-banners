@@ -15,6 +15,9 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
   function safeFile(s) { return (String(s || 'banner').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'banner') + '.webp'; }
 
+  // Ícone Material (fonte local) para usar dentro de botões.
+  function ico(nome) { return '<span class="mi" aria-hidden="true">' + nome + '</span>'; }
+
   // ---------- Modal genérico ----------
   function modal(innerHTML) {
     var overlay = el('div', 'modal');
@@ -51,9 +54,9 @@
         '<h3 class="modal__title">' + esc(opts.titulo) + '</h3>' +
         '<p class="modal__text">' + esc(opts.texto).replace(/\n/g, '<br>') + '</p>' +
         acoes(
-          '<button class="btn btn--ghost" id="cNao">' + esc(opts.cancelar || 'Cancelar') + '</button>' +
+          '<button class="btn btn--ghost" id="cNao">' + ico('close') + esc(opts.cancelar || 'Cancelar') + '</button>' +
           '<button class="btn ' + (opts.perigo ? 'btn--danger-solid' : 'btn--primary') + '" id="cSim">' +
-          esc(opts.ok || 'Confirmar') + '</button>'
+          ico(opts.perigo ? 'delete' : 'check') + esc(opts.ok || 'Confirmar') + '</button>'
         )
       );
       var respondido = false;
@@ -72,7 +75,7 @@
         '<h3 class="modal__title">' + esc(opts.titulo) + '</h3>' +
         '<p class="modal__text' + (opts.erro ? ' is-err' : '') + '">' +
           esc(opts.texto).replace(/\n/g, '<br>') + '</p>' +
-        acoes('<button class="btn btn--primary" id="aOk">Entendi</button>')
+        acoes('<button class="btn btn--primary" id="aOk">' + ico('check') + 'Entendi</button>')
       );
       m.onClose(function () { resolve(); });
       m.box.querySelector('#aOk').addEventListener('click', m.close);
@@ -180,13 +183,30 @@
   window.AffemgUI = {
     modal: modal, el: el, esc: esc,
     confirmar: confirmar, avisar: avisar,
-    toast: toast, carregando: carregando,
+    toast: toast, carregando: carregando, ico: ico,
     campoSenha: campoSenha, ligarOlhos: ligarOlhos,
     openLogin: function (cb) { openLogin(cb); },
     openSolicitarAcesso: function (e) { openSolicitarAcesso(e); },
     openEsqueciSenha: function (e) { openEsqueciSenha(e); },
     openDefinirSenha: function (c) { openDefinirSenha(c); },
   };
+
+  // Camada de carregamento sobre o modal: logo da marca pulsando dentro de um anel que gira.
+  function ocupado(box, titulo, sub) {
+    var o = el('div', 'modal__busy');
+    o.setAttribute('role', 'status');
+    o.innerHTML =
+      '<div class="busy__logo">' +
+        '<span class="busy__pulse"></span><span class="busy__pulse busy__pulse--2"></span>' +
+        '<svg class="busy__ring" viewBox="0 0 84 84" aria-hidden="true"><circle class="busy__track" cx="42" cy="42" r="37"/><circle class="busy__arc" cx="42" cy="42" r="37"/></svg>' +
+        '<img class="busy__mark" src="assets/app-icon.svg" alt="" width="38" height="38">' +
+      '</div>' +
+      '<strong class="busy__title">' + esc(titulo) + '</strong>' +
+      '<span class="busy__sub">' + esc(sub || '') + '</span>' +
+      '<span class="busy__bar"><i></i></span>';
+    box.appendChild(o);
+    return { fim: function () { o.remove(); } };
+  }
 
   // ---------- Login ----------
   function openLogin(onDone) {
@@ -199,8 +219,8 @@
         '<button type="button" class="linkbtn" id="mPedir">Não tenho acesso</button>' +
       '</div>' +
       '<div class="modal__msg" id="mMsg"></div>' +
-      '<div class="modal__actions"><button class="btn btn--ghost" id="mCancel">Cancelar</button>' +
-      '<button class="btn btn--primary" id="mLogin">Entrar</button></div>'
+      '<div class="modal__actions"><button class="btn btn--ghost" id="mCancel">' + ico('close') + 'Cancelar</button>' +
+      '<button class="btn btn--primary" id="mLogin">' + ico('login') + 'Entrar</button></div>'
     );
     var email = m.box.querySelector('#mEmail'); email.focus();
     ligarOlhos(m.box);
@@ -212,11 +232,21 @@
       m.close(); openSolicitarAcesso(email.value.trim());
     });
     function submit() {
-      var msg = m.box.querySelector('#mMsg'); msg.textContent = 'Entrando…'; msg.className = 'modal__msg';
+      var msg = m.box.querySelector('#mMsg'); msg.textContent = ''; msg.className = 'modal__msg';
       var btn = m.box.querySelector('#mLogin'); btn.disabled = true;
+      var busy = ocupado(m.box, 'Entrando…', 'Verificando seus dados');
+      var t0 = Date.now();
+      // Mantém a animação por um mínimo de tempo, para ela ser percebida mesmo com resposta rápida.
+      function depois(fn) { setTimeout(fn, Math.max(0, 700 - (Date.now() - t0))); }
       BK.signIn(email.value.trim(), m.box.querySelector('#mPass').value)
-        .then(function () { m.close(); if (onDone) onDone(); })
-        .catch(function (err) { msg.textContent = err.message; msg.className = 'modal__msg is-err'; btn.disabled = false; });
+        .then(function () { depois(function () { m.close(); if (onDone) onDone(); }); })
+        .catch(function (err) {
+          depois(function () {
+            busy.fim();
+            msg.textContent = err.message; msg.className = 'modal__msg is-err'; btn.disabled = false;
+            m.box.classList.remove('is-shake'); void m.box.offsetWidth; m.box.classList.add('is-shake');
+          });
+        });
     }
     m.box.querySelector('#mLogin').addEventListener('click', submit);
     m.box.querySelector('#mPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
@@ -251,8 +281,8 @@
       '<label class="modal__label">E-mail</label><input type="email" id="pEmail" autocomplete="email">' +
       (temCaptcha ? '<div class="captcha" id="pCaptcha"></div>' : '') +
       '<div class="modal__msg" id="pMsg"></div>' +
-      '<div class="modal__actions"><button class="btn btn--ghost" id="pCancel">Cancelar</button>' +
-      '<button class="btn btn--primary" id="pEnviar">Enviar pedido</button></div>'
+      '<div class="modal__actions"><button class="btn btn--ghost" id="pCancel">' + ico('close') + 'Cancelar</button>' +
+      '<button class="btn btn--primary" id="pEnviar">' + ico('send') + 'Enviar pedido</button></div>'
     );
     var nome = m.box.querySelector('#pNome');
     var email = m.box.querySelector('#pEmail');
@@ -313,8 +343,8 @@
         'um link para criar uma nova senha.</p>' +
       '<label class="modal__label">E-mail</label><input type="email" id="rEmail" autocomplete="email">' +
       '<div class="modal__msg" id="rMsg"></div>' +
-      '<div class="modal__actions"><button class="btn btn--ghost" id="rCancel">Cancelar</button>' +
-      '<button class="btn btn--primary" id="rEnviar">Enviar link</button></div>'
+      '<div class="modal__actions"><button class="btn btn--ghost" id="rCancel">' + ico('close') + 'Cancelar</button>' +
+      '<button class="btn btn--primary" id="rEnviar">' + ico('send') + 'Enviar link</button></div>'
     );
     var email = m.box.querySelector('#rEmail');
     var msg = m.box.querySelector('#rMsg');
@@ -363,7 +393,7 @@
       '<div class="modal__hint">Pelo menos 6 caracteres.</div>' +
       '<div class="modal__msg" id="dMsg"></div>' +
       '<div class="modal__actions">' +
-      '<button class="btn btn--primary" id="dSalvar">Salvar senha</button></div>'
+      '<button class="btn btn--primary" id="dSalvar">' + ico('save') + 'Salvar senha</button></div>'
     );
     var s1 = m.box.querySelector('#dSenha');
     var s2 = m.box.querySelector('#dSenha2');
@@ -409,7 +439,7 @@
     var w = $('#authWidget'); w.hidden = false;
     if (user) {
       w.innerHTML = '<span class="auth__user" title="' + esc(user.email) + '">' + esc(user.email) +
-        (BK.isAdmin() ? ' · admin' : '') + '</span><button class="btn btn--ghost btn--sm" id="btnLogout"><span class="mi" aria-hidden="true">logout</span>Sair</button>';
+        (BK.isAdmin() ? ' · admin' : '') + '</span><button class="btn btn--ghost btn--sm hdr-btn hdr-btn--sair" id="btnLogout" title="Sair" aria-label="Sair"><span class="mi" aria-hidden="true">logout</span><span class="hdr-btn__txt">Sair</span></button>';
       w.querySelector('#btnLogout').addEventListener('click', function () { BK.signOut(); });
     } else {
       w.innerHTML = '<button class="btn btn--primary btn--sm" id="btnLogin"><span class="mi" aria-hidden="true">login</span>Entrar</button>';
@@ -442,8 +472,8 @@
       '<input type="text" id="sGrupo" list="sGrupos" placeholder="Escolha uma existente ou digite uma nova"><datalist id="sGrupos"></datalist>' +
       (admin ? '<label class="modal__check"><input type="checkbox" id="sReco"> Marcar como recomendado da categoria</label>' : '') +
       '<div class="modal__msg" id="sMsg"></div>' +
-      '<div class="modal__actions"><button class="btn btn--ghost" id="sCancel">Cancelar</button>' +
-      '<button class="btn btn--primary" id="sSave">Salvar</button></div>'
+      '<div class="modal__actions"><button class="btn btn--ghost" id="sCancel">' + ico('close') + 'Cancelar</button>' +
+      '<button class="btn btn--primary" id="sSave">' + ico('save') + 'Salvar</button></div>'
     );
     m.box.querySelector('#sNome').value = AffemgCreator.suggestName();
     m.box.querySelector('#sCancel').addEventListener('click', m.close);
@@ -488,15 +518,16 @@
     return banners.map(function (b) { return { name: safeFile(b.titulo), getBlob: function () { return BK.downloadBlob(b.storage_path); } }; });
   }
   function zipButton(nome, banners, texto) {
-    var btn = el('button', 'btn btn--primary btn--sm', texto);
+    var btn = el('button', 'btn btn--primary btn--sm');
+    btn.innerHTML = ico('download') + texto;
     btn.type = 'button';
     btn.addEventListener('click', function () {
-      var label = btn.textContent; btn.disabled = true; btn.textContent = 'Compactando…';
+      var label = btn.innerHTML; btn.disabled = true; btn.textContent = 'Compactando…';
       var load = carregando('Compactando ' + banners.length + ' banners…');
       AffemgZip.download(nome, zipEntries(banners))
         .then(function () { toast('Download do .zip iniciado.', 'ok'); })
         .catch(function (err) { toast('Falha ao gerar o .zip: ' + err.message, 'erro'); })
-        .then(function () { load.fecha(); btn.disabled = false; btn.textContent = label; });
+        .then(function () { load.fecha(); btn.disabled = false; btn.innerHTML = label; });
     });
     return btn;
   }
@@ -525,10 +556,10 @@
       (b.recomendado ? '<span class="badge-reco"><span class="mi" aria-hidden="true">star</span> Recomendado</span>' : '') +
       '<button type="button" class="gcard__imgbtn" aria-label="Ampliar" title="Ampliar"><img class="gcard__img" src="' + src + '" alt="' + titulo + '" loading="lazy"><span class="gcard__zoom"><span class="mi" aria-hidden="true">zoom_in</span> Ampliar</span></button>' +
       '<figcaption class="gcard__body">' +
-        '<span class="gcard__name">' + titulo + '<br><small class="gcard__by">' + esc(b.owner_email || '') + '</small></span>' +
+        '<span class="gcard__name">' + titulo + '</span>' +
         '<span class="gcard__acts">' +
-          '<button class="btn btn--ghost btn--sm" data-dl="1">Baixar</button>' +
-          (BK.canDelete(b) ? '<button class="btn btn--sm btn--danger" data-del="1">Remover</button>' : '') +
+          '<button class="btn btn--ghost btn--sm" data-dl="1">' + ico('download') + 'Baixar</button>' +
+          (BK.canDelete(b) ? '<button class="btn btn--sm btn--danger" data-del="1">' + ico('delete') + 'Remover</button>' : '') +
         '</span>' +
       '</figcaption>';
     card.querySelector('.gcard__imgbtn').addEventListener('click', function () { AffemgLightbox.open(src, b.titulo, safeFile(b.titulo)); });
@@ -556,7 +587,7 @@
           })
           .catch(function (err) {
             toast('Falha ao remover: ' + err.message, 'erro');
-            del.disabled = false; del.textContent = 'Remover';
+            del.disabled = false; del.innerHTML = ico('delete') + 'Remover';
           });
       });
     });
@@ -585,15 +616,51 @@
   // ---------- Render da aba ----------
   function isSalvosVisible() { var p = $('#panel-salvos'); return p && !p.hidden; }
 
+  // Tela de quem ainda não entrou: CTA centralizado com uma cena animada da gestão dos banners
+  // (categorias, estrela de recomendado, download em lote). Ver .vitrine no CSS.
+  function vitrineHTML() {
+    function card(tom, extra) {
+      return '<span class="vt-card vt-card--' + tom + (extra || '') + '"></span>';
+    }
+    function coluna(nome, c1, c2, n) {
+      return '<div class="vt-col vt-col--' + n + '"><span class="vt-chip">' + nome + '</span>' +
+        card(c1, n === 1 ? ' vt-card--reco' : '') + card(c2) + '</div>';
+    }
+    return '<div class="vitrine">' +
+      '<div class="vitrine__art" aria-hidden="true">' +
+        '<div class="vt-cols">' +
+          coluna('Convênios', 'a', 'b', 1) + coluna('Eventos', 'c', 'a', 2) + coluna('Fisco', 'b', 'c', 3) +
+        '</div>' +
+        '<span class="vt-star"><span class="mi">star</span></span>' +
+        '<div class="vt-dock"><span class="vt-dock__ico"><span class="mi vt-dock__dl">download</span><span class="mi vt-dock__ok">check</span></span>' +
+          '<span class="vt-dock__txt">Baixar .zip</span><span class="vt-dock__bar"><i></i></span></div>' +
+      '</div>' +
+      '<h2 class="vitrine__title">Os banners da equipe, organizados</h2>' +
+      '<p class="vitrine__sub">Entre para ver, baixar e gerenciar os banners por categoria.</p>' +
+      '<div class="vitrine__acts">' +
+        '<button type="button" class="btn btn--primary" id="vtEntrar"><span class="mi" aria-hidden="true">login</span>Entrar</button>' +
+        '<button type="button" class="btn btn--ghost" id="vtPedir"><span class="mi" aria-hidden="true">person_add</span>Solicitar acesso</button>' +
+      '</div>' +
+    '</div>';
+  }
+
   function renderSalvos(banners) {
     var root = $('#salvos'); var msg = $('#salvosMsg');
+    var head = $('#panel-salvos .gallery-head');
+    var setsRoot = $('#salvosSets');
     root.innerHTML = '';
+    if (setsRoot) setsRoot.innerHTML = '';
     if (!BK.getUser()) {
-      msg.hidden = false;
-      msg.innerHTML = 'Faça login para ver os banners salvos. <button class="btn btn--primary btn--sm" id="salvosLogin">Entrar</button>';
-      msg.querySelector('#salvosLogin').addEventListener('click', function () { openLogin(function () { AffemgSalvos.invalidate(); AffemgSalvos.refresh(); }); });
+      msg.hidden = true;
+      if (head) head.hidden = true;
+      root.innerHTML = vitrineHTML();
+      root.querySelector('#vtEntrar').addEventListener('click', function () {
+        openLogin(function () { AffemgSalvos.invalidate(); AffemgSalvos.refresh(); });
+      });
+      root.querySelector('#vtPedir').addEventListener('click', function () { openSolicitarAcesso(); });
       return;
     }
+    if (head) head.hidden = false;
     if (!banners.length) { msg.hidden = false; msg.textContent = 'Nenhum banner salvo ainda. Vá em “Criar banner” e clique em “Salvar no projeto”.'; return; }
     msg.hidden = true;
 
@@ -618,7 +685,7 @@
       c.appendChild(zipButton('recomendados', recomendados, 'Baixar .zip'));
       setsGrid.appendChild(c);
       setsWrap.appendChild(setsGrid);
-      root.appendChild(setsWrap);
+      (setsRoot || root).appendChild(setsWrap);
     }
 
     // Categorias.

@@ -11,7 +11,7 @@
   var el = UI.el, esc = UI.esc, modal = UI.modal;
   var confirmar = UI.confirmar, avisar = UI.avisar;
   var campoSenha = UI.campoSenha, ligarOlhos = UI.ligarOlhos;
-  var toast = UI.toast, carregando = UI.carregando;
+  var toast = UI.toast, carregando = UI.carregando, ico = UI.ico;
 
   function dataBR(iso) {
     if (!iso) return '';
@@ -36,8 +36,8 @@
         : 'A senha precisa ter pelo menos 6 caracteres. O usuário já entra direto, sem confirmar e-mail.') +
       '</div>' +
       '<div class="modal__msg" id="uMsg"></div>' +
-      '<div class="modal__actions"><button class="btn btn--ghost" id="uCancel">Cancelar</button>' +
-      '<button class="btn btn--primary" id="uSave">' + (editando ? 'Salvar' : 'Cadastrar') + '</button></div>'
+      '<div class="modal__actions"><button class="btn btn--ghost" id="uCancel">' + ico('close') + 'Cancelar</button>' +
+      '<button class="btn btn--primary" id="uSave">' + ico(editando ? 'save' : 'person_add') + (editando ? 'Salvar' : 'Cadastrar') + '</button></div>'
     );
     var nome = m.box.querySelector('#uNome');
     var email = m.box.querySelector('#uEmail');
@@ -101,9 +101,9 @@
       '</div>' +
       '<div class="ucard__acts">' +
         (pode
-          ? '<button class="btn btn--ghost btn--sm" data-senha="1">Redefinir senha</button>' +
-            '<button class="btn btn--ghost btn--sm" data-edit="1">Editar</button>' +
-            '<button class="btn btn--danger btn--sm" data-del="1">Remover</button>'
+          ? '<button class="btn btn--ghost btn--sm" data-senha="1">' + ico('lock_reset') + 'Redefinir senha</button>' +
+            '<button class="btn btn--ghost btn--sm" data-edit="1">' + ico('edit') + 'Editar</button>' +
+            '<button class="btn btn--danger btn--sm" data-del="1">' + ico('delete') + 'Remover</button>'
           : '<span class="ucard__nota">' + (eu ? 'Sua conta' : 'Somente leitura') + '</span>') +
       '</div>';
 
@@ -120,7 +120,7 @@
         BK.enviarLinkDeSenha(u.email)
           .then(function () { toast('Link enviado para ' + u.email + '.', 'ok'); })
           .catch(function (err) { toast('Falha ao enviar: ' + err.message, 'erro'); })
-          .then(function () { senha.disabled = false; senha.textContent = 'Redefinir senha'; });
+          .then(function () { senha.disabled = false; senha.innerHTML = ico('lock_reset') + 'Redefinir senha'; });
       });
     });
 
@@ -149,7 +149,7 @@
           .catch(function (err) {
             load.fecha();
             toast('Falha ao remover: ' + err.message, 'erro');
-            del.disabled = false; del.textContent = 'Remover';
+            del.disabled = false; del.innerHTML = ico('delete') + 'Remover';
           });
       });
     });
@@ -167,8 +167,8 @@
         '<span class="ucard__since">Pedido em ' + dataBR(s.created_at) + '</span>' +
       '</div>' +
       '<div class="ucard__acts">' +
-        '<button class="btn btn--ghost btn--sm" data-nao="1">Recusar</button>' +
-        '<button class="btn btn--primary btn--sm" data-sim="1">Aprovar</button>' +
+        '<button class="btn btn--ghost btn--sm" data-nao="1">' + ico('close') + 'Recusar</button>' +
+        '<button class="btn btn--primary btn--sm" data-sim="1">' + ico('check') + 'Aprovar</button>' +
       '</div>';
 
     function trava(on, texto) {
@@ -218,8 +218,8 @@
         'Provavelmente a pessoa esqueceu a senha. Você pode enviar o link para ela criar uma nova.</p>' +
       '<div class="modal__msg" id="jMsg"></div>' +
       '<div class="modal__actions">' +
-        '<button class="btn btn--ghost" id="jFechar">Só arquivar o pedido</button>' +
-        '<button class="btn btn--primary" id="jEnviar">Enviar link de senha</button>' +
+        '<button class="btn btn--ghost" id="jFechar">' + ico('archive') + 'Só arquivar o pedido</button>' +
+        '<button class="btn btn--primary" id="jEnviar">' + ico('send') + 'Enviar link de senha</button>' +
       '</div>'
     );
     function arquiva() {

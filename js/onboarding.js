@@ -627,7 +627,7 @@
         pular: semLogin,
       });
       lista.push({
-        alvo: function () { return $('#salvos .setcard') || $('#salvos') || $('#salvosMsg'); },
+        alvo: function () { return $('#salvosSets .setcard') || $('#salvos') || $('#salvosMsg'); },
         titulo: 'Conjuntos',
         texto: '<strong>Recomendados</strong> reúne a melhor opção de cada categoria num único .zip.',
         pular: semLogin,

@@ -29,12 +29,14 @@
     if (TABS.indexOf(name) < 0) name = 'criar';
     // Abas ocultas (ex.: "Usuários" para quem não é admin) não podem ser abertas
     // nem por link direto no hash.
-    var btn = document.querySelector('.tab[data-tab="' + name + '"]');
+    var btn = document.querySelector('button[data-tab="' + name + '"]');
     if (btn && btn.hidden) name = 'criar';
-    document.querySelectorAll('.tab').forEach(function (t) {
+    document.querySelectorAll('button[data-tab]').forEach(function (t) {
       var active = t.dataset.tab === name;
       t.classList.toggle('is-active', active);
-      t.setAttribute('aria-selected', active ? 'true' : 'false');
+      // Abas de verdade usam aria-selected; o botão "Usuários" do cabeçalho usa aria-current.
+      if (t.getAttribute('role') === 'tab') t.setAttribute('aria-selected', active ? 'true' : 'false');
+      else if (active) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
     TABS.forEach(function (n) {
       var panel = document.getElementById('panel-' + n);
@@ -57,7 +59,7 @@
   }
 
   function initTabs() {
-    document.querySelectorAll('.tab').forEach(function (tab) {
+    document.querySelectorAll('button[data-tab]').forEach(function (tab) {
       tab.addEventListener('click', function () { irPara(tab.dataset.tab); });
     });
 
