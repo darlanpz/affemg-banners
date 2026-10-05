@@ -34,7 +34,7 @@
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  src: url(../assets/fonts/material-symbols-outlined.woff2?v=4) format('woff2');
+  src: url(../assets/fonts/material-symbols-outlined.woff2?v=8) format('woff2');
 }
 .mi {
   font-family: 'Material Symbols Outlined';
@@ -253,8 +253,10 @@ body {
 .btn--primary:disabled { background: #a9bccb; cursor: not-allowed; }
 .btn--ghost { background: var(--white); border-color: var(--line); color: var(--ink); }
 .btn--ghost:hover { background: var(--bg); }
+.btn--block { width: 100%; }
 .btn--ghost:disabled { color: #9aa8b3; cursor: not-allowed; background: var(--white); }
 .btn .mi { font-size: 18px; margin-right: 8px; }
+.btn .mi--fim { margin-right: 0; margin-left: 8px; }
 
 /* ---------- Gallery ---------- */
 .gallery-head h1 { font-size: 22px; margin: 0 0 2px; }
@@ -520,20 +522,95 @@ body.has-loading { overflow: hidden; }
 }
 
 /* ---------- Boas-vindas e tutorial ---------- */
-.modal__box--wel { max-width: 460px; }
-.wel { text-align: center; }
-.wel__logo { display: block; margin: 0 auto 12px; }
-.wel__title { font-size: 19px; margin: 0 0 10px; }
-.wel__text { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 0 0 14px; }
-.wel__text--sm { font-size: 12.5px; margin-bottom: 0; }
-.wel__list {
-  text-align: left; margin: 0 0 14px; padding: 0; list-style: none;
-  display: flex; flex-direction: column; gap: 8px;
+/* Boas-vindas: 3 telas com cena animada, pouco texto e pontos de progresso.
+   Estado base = quadro final (sem movimento). Animações só em no-preference. */
+.modal__box--wel2 { max-width: 460px; padding: 0; overflow: hidden; }
+.wel2__art {
+  position: relative; height: 210px; overflow: hidden; color: #fff;
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, .22), transparent 55%),
+    linear-gradient(160deg, var(--blue) 0%, var(--blue-dark) 100%);
 }
-.wel__list li {
-  font-size: 13.5px; color: var(--ink); line-height: 1.45;
-  background: var(--blue-050); border-radius: var(--radius); padding: 10px 12px;
+.wel2__art::before {   /* padrão com o símbolo da logo, com 7px entre eles, bem discreto */
+  content: ""; position: absolute; inset: 0; opacity: .12;
+  background: url(../assets/logo-pattern.svg?v=3) 0 0 / 91.60px 133.52px;
 }
+.wel2__scene {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility .25s;
+}
+.wel2__scene.is-on { opacity: 1; visibility: visible; }
+.wel2__body { padding: 22px 26px 24px; text-align: center; }
+.wel2__texts { position: relative; min-height: 76px; }
+.wel2__text { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s; }
+.wel2__text.is-on { position: relative; opacity: 1; visibility: visible; }
+.wel2__title { margin: 0 0 6px; font-size: 22px; line-height: 1.2; letter-spacing: -.01em; }
+.wel2__sub { margin: 0; font-size: 14.5px; color: var(--muted); line-height: 1.5; }
+.wel2__dots { display: flex; justify-content: center; gap: 8px; margin: 18px 0 20px; }
+.wel2__dot {
+  width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--line); transition: width .25s ease, background-color .25s ease;
+}
+.wel2__dot:hover { background: #b9c6d1; }
+.wel2__dot.is-on { width: 26px; background: var(--blue); }
+.wel2__actions { display: flex; justify-content: space-between; gap: 10px; }
+.wel2__actions .btn { flex: 0 0 auto; }
+
+/* Cena 1: o banner se montando */
+.wel2__mock { width: 250px; height: auto; filter: drop-shadow(0 16px 24px rgba(0, 0, 0, .3)); overflow: visible; }
+
+
+/* Cena 2: três passos ligados por uma linha */
+.w-steps { position: relative; width: 330px; display: flex; justify-content: space-between; }
+.w-steps__line {
+  position: absolute; left: 40px; right: 40px; top: 31px; height: 2px;
+  background: rgba(255, 255, 255, .28); border-radius: 2px;
+}
+.w-steps__dot {
+  position: absolute; top: -4px; left: 0; width: 10px; height: 10px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, .22); opacity: 0;
+}
+.w-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 80px; }
+.w-step__ico {
+  width: 62px; height: 62px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; color: var(--blue); box-shadow: 0 10px 22px rgba(0, 0, 0, .24);
+}
+.w-step__ico .mi { font-size: 30px; }
+.w-step__txt { font-size: 13px; font-weight: 600; letter-spacing: .01em; }
+
+/* Cena 3: tudo certo (selo de check e ondas) */
+.w-done { position: relative; width: 220px; height: 170px; display: flex; align-items: center; justify-content: center; }
+.w-done__badge {
+  position: relative; z-index: 1; width: 86px; height: 86px; border-radius: 50%; background: #fff; color: var(--blue);
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 14px 30px rgba(0, 0, 0, .28);
+}
+.w-done__badge .mi { font-size: 48px; }
+.w-done__ring { position: absolute; width: 86px; height: 86px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); opacity: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .wel2__scene.is-on .m-card { animation: w-pop .5s cubic-bezier(.2, .8, .3, 1) both; }
+  .wel2__scene.is-on .wel2__mock { animation: w-float 4.5s ease-in-out 1.6s infinite; }
+  .wel2__scene.is-on .m-mtn { animation: w-rise .6s cubic-bezier(.2, .8, .3, 1) .3s both; }
+  .wel2__scene.is-on .m-foot { animation: w-fade .6s ease 1.05s both; }
+
+  .wel2__scene.is-on .w-step { animation: w-pop .5s cubic-bezier(.2, .8, .3, 1) both; }
+  .wel2__scene.is-on .w-step--2 { animation-delay: .18s; }
+  .wel2__scene.is-on .w-step--3 { animation-delay: .36s; }
+  .wel2__scene.is-on .w-steps__dot { animation: w-travel 2.6s ease-in-out .8s infinite; }
+
+  .wel2__scene.is-on .w-done__badge { animation: w-drop .6s cubic-bezier(.2, .8, .3, 1) both; }
+  .wel2__scene.is-on .w-done__ring { animation: w-ring 2.2s ease-out .5s infinite; }
+  .wel2__scene.is-on .w-done__ring--2 { animation-delay: 1.3s; }
+
+  .wel2__text.is-on { animation: aff-rise .3s ease-out both; }
+}
+@keyframes w-pop { from { opacity: 0; transform: translateY(10px) scale(.88); } to { opacity: 1; transform: none; } }
+@keyframes w-rise { from { opacity: 0; transform: translateY(46px); } to { opacity: 1; transform: none; } }
+@keyframes w-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes w-drop { 0% { opacity: 0; transform: scale(0) rotate(-70deg); } 65% { opacity: 1; transform: scale(1.18) rotate(6deg); } 100% { opacity: 1; transform: none; } }
+@keyframes w-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes w-travel { 0% { left: 0; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { left: calc(100% - 10px); opacity: 0; } }
+@keyframes w-ring { from { transform: scale(.7); opacity: .6; } to { transform: scale(2); opacity: 0; } }
 
 body.has-tour { overflow: hidden; }
 /* O "furo" é um retângulo transparente com uma sombra gigante em volta:
@@ -562,11 +639,20 @@ body.has-tour { overflow: hidden; }
 .tour__title { font-size: 15.5px; margin: 0 0 6px; }
 .tour__text { font-size: 13.5px; color: var(--muted); line-height: 1.55; margin: 0; }
 .tour__acts { margin-top: 12px; }
-.tour__foot { margin-top: 14px; display: flex; justify-content: flex-end; }
-.tour__wait {
-  font-size: 12px; color: var(--blue); font-weight: 600;
-  display: inline-flex; align-items: center; gap: 7px;
+.tour__steps { list-style: none; counter-reset: etapa; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tour__steps li { counter-increment: etapa; display: flex; align-items: center; gap: 10px; color: var(--ink); }
+.tour__steps li::before {
+  content: counter(etapa); flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--blue-050); color: var(--blue); font-size: 12.5px; font-weight: 700;
 }
+.tour__acts[hidden] { display: none; }
+.tour__foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.tour__wait {
+  font-size: 12px; color: var(--blue); font-weight: 600; margin: 12px 0 0;
+  display: flex; align-items: center; gap: 7px;
+}
+.tour__wait[hidden] { display: none; }
 .tour__wait::before {
   content: ""; width: 8px; height: 8px; border-radius: 50%;
   background: var(--blue); animation: aff-pulse 1.4s ease-in-out infinite;

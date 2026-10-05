@@ -330,8 +330,25 @@
     },
   };
 
+  // Volta modelo, elemento e acabamento ao padrão. A imagem enviada é mantida.
+  function restaurar() {
+    state.variante = '01';
+    state.elemento = 'padrao';
+    state.escurecer = false;
+    state.footer = true;
+    buildChoices('variantes', B.VARIANTES, 'variante', ilustraVariante);
+    buildChoices('elementos', B.ELEMENTOS, 'elemento', ilustraElemento);
+    [['tglEscurecer', 'cardEscurecer', state.escurecer], ['tglFooter', 'cardFooter', state.footer]].forEach(function (c) {
+      $('#' + c[0]).checked = c[2];
+      $('#' + c[1]).classList.toggle('is-sel', c[2]);
+    });
+    render();
+    anunciaMudanca();
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initTabs();
+    $('#btnReset').addEventListener('click', restaurar);
     buildChoices('variantes', B.VARIANTES, 'variante', ilustraVariante);
     buildChoices('elementos', B.ELEMENTOS, 'elemento', ilustraElemento);
     ligaAcabamento();

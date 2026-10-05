@@ -1,7 +1,9 @@
 /* onboarding.js: boas-vindas no primeiro acesso + tutorial guiado.
 
-   O tutorial é interativo: cada passo destaca um elemento e só avança quando a
-   pessoa realmente faz aquilo. No fim ela tem um banner salvo de verdade.
+   O tutorial é guiado: cada passo destaca um elemento e tem sempre duas ações,
+   "Cancelar" e "Continuar". Só o Continuar avança; mexer no formulário nunca
+   avança sozinho. Alguns passos pedem uma ação antes (ex.: escolher a imagem) e
+   mantêm o Continuar desligado até ela acontecer. No fim há um banner salvo de verdade.
 
    Para revisitar: botão "Como usar" no topo. */
 (function () {
@@ -46,33 +48,123 @@
   }
 
   // ---------- Boas-vindas ----------
+  // Jornada em 3 telas, com pouca escrita e uma cena animada em cada uma:
+  //   1. o que é (um banner se montando)  2. como funciona (3 passos)  3. convite ao tutorial.
+  // Movimento só com prefers-reduced-motion: no-preference (ver CSS).
+  var BV_TEXTOS = [
+    { t: 'Banners prontos para o app', p: 'Monte, ajuste e publique em minutos.' },
+    { t: 'Três passos', p: 'Envie a imagem, escolha as opções e salve.' },
+    { t: 'Vamos criar o primeiro?', p: 'Um tutorial rápido, de cerca de 2 minutos.' },
+  ];
+
+  function cenaBanner() {
+    // O banner "se montando": fundo, montanhas, logo da AFFEMG e rodapé entram em sequência.
+    return '<svg class="wel2__mock" viewBox="0 0 240 150" aria-hidden="true" focusable="false">' +
+      '<defs>' +
+        '<linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fbdf2"/><stop offset="1" stop-color="#1d6fae"/></linearGradient>' +
+        '<linearGradient id="wf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-opacity="0"/><stop offset="1" stop-opacity=".7"/></linearGradient>' +
+        '<clipPath id="wc"><rect width="240" height="150" rx="10"/></clipPath>' +
+      '</defs>' +
+      '<g class="m-card"><g clip-path="url(#wc)">' +
+        '<rect width="240" height="150" fill="url(#wg)"/>' +
+        '<g class="m-mtn"><polygon points="0,150 0,96 46,60 82,88 126,48 176,92 240,70 240,150" fill="#0a3a66"/>' +
+        '<polygon points="0,150 0,122 40,100 84,122 130,106 190,126 240,112 240,150" fill="#03172b"/></g>' +
+        '<rect class="m-foot" y="92" width="240" height="58" fill="url(#wf)"/>' +
+      '</g></g>' +
+    '</svg>';
+  }
+
+  function cenaPassos() {
+    function passo(icone, rotulo, n) {
+      return '<div class="w-step w-step--' + n + '"><span class="w-step__ico"><span class="mi" aria-hidden="true">' + icone + '</span></span>' +
+        '<span class="w-step__txt">' + rotulo + '</span></div>';
+    }
+    return '<div class="w-steps">' +
+      '<span class="w-steps__line"><span class="w-steps__dot"></span></span>' +
+      passo('add_photo_alternate', 'Imagem', 1) + passo('tune', 'Opções', 2) + passo('save', 'Salvar', 3) +
+    '</div>';
+  }
+
+  function cenaPronto() {
+    return '<div class="w-done"><span class="w-done__ring"></span><span class="w-done__ring w-done__ring--2"></span>' +
+      '<span class="w-done__badge"><span class="mi" aria-hidden="true">check</span></span></div>';
+  }
+
   function boasVindas() {
     var m = UI.modal(
-      '<div class="wel">' +
-        '<img class="wel__logo" src="assets/app-icon.svg" alt="" width="46" height="46">' +
-        '<h3 class="wel__title">Bem-vindo aos Banners AFFEMG</h3>' +
-        '<p class="wel__text">Esta ferramenta monta banners no formato certo do aplicativo da AFFEMG, ' +
-          'já prontos para publicar. Você envia uma imagem de fundo, escolhe o modelo e baixa o arquivo.</p>' +
-        '<ul class="wel__list">' +
-          '<li><strong>Criar banner:</strong> monte o seu e baixe em WebP.</li>' +
-          '<li><strong>Banners salvos:</strong> tudo que a equipe já publicou, por categoria, com download em lote.</li>' +
-        '</ul>' +
-        '<p class="wel__text wel__text--sm">O tutorial leva cerca de dois minutos e termina com um banner salvo de verdade.</p>' +
-      '</div>' +
-      '<div class="modal__actions">' +
-        '<button class="btn btn--ghost" id="welPular">Agora não</button>' +
-        '<button class="btn btn--primary" id="welIr">Fazer o tutorial</button>' +
+      '<div class="wel2" aria-label="Boas-vindas">' +
+        '<div class="wel2__art">' +
+          '<div class="wel2__scene is-on" data-i="0">' + cenaBanner() + '</div>' +
+          '<div class="wel2__scene" data-i="1">' + cenaPassos() + '</div>' +
+          '<div class="wel2__scene" data-i="2">' + cenaPronto() + '</div>' +
+        '</div>' +
+        '<div class="wel2__body">' +
+          '<div class="wel2__texts" aria-live="polite">' +
+            BV_TEXTOS.map(function (x, i) {
+              return '<div class="wel2__text' + (i === 0 ? ' is-on' : '') + '" data-i="' + i + '">' +
+                '<h3 class="wel2__title">' + x.t + '</h3><p class="wel2__sub">' + x.p + '</p></div>';
+            }).join('') +
+          '</div>' +
+          '<div class="wel2__dots" role="tablist" aria-label="Etapas">' +
+            BV_TEXTOS.map(function (x, i) {
+              return '<button type="button" class="wel2__dot' + (i === 0 ? ' is-on' : '') + '" data-go="' + i + '" role="tab" aria-label="Etapa ' + (i + 1) + ' de 3"></button>';
+            }).join('') +
+          '</div>' +
+          '<div class="wel2__actions">' +
+            '<button type="button" class="btn btn--ghost" id="welVoltar"></button>' +
+            '<button type="button" class="btn btn--primary" id="welProx"></button>' +
+          '</div>' +
+        '</div>' +
       '</div>'
     );
-    m.box.classList.add('modal__box--wel');
-    m.box.querySelector('#welPular').addEventListener('click', function () {
+    m.box.classList.add('modal__box--wel2');
+
+    var idx = 0, ultimo = BV_TEXTOS.length - 1;
+    var voltar = m.box.querySelector('#welVoltar');
+    var prox = m.box.querySelector('#welProx');
+
+    function pular() {
       marcaVisto(); m.close();
-      UI.toast('Quando quiser, clique em “Como usar” no topo.', 'info');
+      UI.toast('Para ver o tutorial depois, clique em “Como usar”.', 'info');
+    }
+    function iniciar() { marcaVisto(); m.close(); comeca(); }
+
+    function vai(i) {
+      idx = Math.max(0, Math.min(ultimo, i));
+      m.box.querySelectorAll('.wel2__scene, .wel2__text, .wel2__dot').forEach(function (n) {
+        var on = Number(n.getAttribute('data-i') != null ? n.getAttribute('data-i') : n.getAttribute('data-go')) === idx;
+        n.classList.toggle('is-on', on);
+        if (n.classList.contains('wel2__dot')) n.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      if (idx === 0) {
+        voltar.innerHTML = 'Pular';
+        prox.innerHTML = 'Continuar<span class="mi mi--fim" aria-hidden="true">arrow_forward</span>';
+      } else if (idx < ultimo) {
+        voltar.innerHTML = '<span class="mi" aria-hidden="true">arrow_back</span>Voltar';
+        prox.innerHTML = 'Continuar<span class="mi mi--fim" aria-hidden="true">arrow_forward</span>';
+      } else {
+        voltar.innerHTML = 'Explorar sozinho';
+        prox.innerHTML = '<span class="mi" aria-hidden="true">play_arrow</span>Fazer o tutorial';
+      }
+      prox.focus();
+    }
+
+    voltar.addEventListener('click', function () {
+      if (idx === 0 || idx === ultimo) pular(); else vai(idx - 1);
     });
-    m.box.querySelector('#welIr').addEventListener('click', function () {
-      marcaVisto(); m.close(); comeca();
+    prox.addEventListener('click', function () { if (idx === ultimo) iniciar(); else vai(idx + 1); });
+    m.box.querySelectorAll('.wel2__dot').forEach(function (d) {
+      d.addEventListener('click', function () { vai(Number(d.getAttribute('data-go'))); });
     });
-    m.box.querySelector('#welIr').focus();
+
+    function teclas(e) {
+      if (e.key === 'ArrowRight') { vai(idx + 1); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { vai(idx - 1); e.preventDefault(); }
+    }
+    document.addEventListener('keydown', teclas);
+    m.onClose(function () { document.removeEventListener('keydown', teclas); });
+
+    vai(0);
   }
 
   // ---------- Elementos do destaque ----------
@@ -190,51 +282,91 @@
     // Passos podem ficar irrelevantes (ex.: já estava logado): pule-os.
     if (passo.pular && passo.pular()) return avanca();
 
-    var alvo = typeof passo.alvo === 'function' ? passo.alvo() : $(passo.alvo);
+    if (passo.aoEntrar) passo.aoEntrar();
+
+    // Alguns passos precisam esperar a tela assentar (ex.: a galeria carregar).
+    if (passo.atraso) {
+      caixa.style.visibility = 'hidden';
+      furo.hidden = true;
+      setTimeout(function () {
+        if (ativo && passos[passoAtual] === passo) desenha(passo);
+      }, passo.atraso);
+      return;
+    }
+    desenha(passo);
+  }
+
+  // Contagem "Passo n de N" só com os passos que valem agora (os pulados, como o
+  // login para quem já entrou, não entram). O passo atual sempre conta.
+  function contagem() {
+    var vale = function (p) { return !(p.pular && p.pular()); };
+    var total = passos.filter(vale).length;
+    var pos = passos.slice(0, passoAtual).filter(vale).length + 1;
+    return { pos: pos, total: Math.max(total, pos) };
+  }
+
+  function desenha(passo) {
+    var resolve = function () { return typeof passo.alvo === 'function' ? passo.alvo() : $(passo.alvo); };
+    var alvo = resolve();
     if (!alvo) {
       // Alvo sumiu (UI mudou): não trava o usuário, segue adiante.
       return avanca();
     }
-
-    if (passo.aoEntrar) passo.aoEntrar();
+    caixa.style.visibility = '';
 
     alvo.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
+    var ultimo = passoAtual === passos.length - 1;
     caixa.innerHTML =
       '<div class="tour__top">' +
-        '<span class="tour__count">Passo ' + (passoAtual + 1) + ' de ' + passos.length + '</span>' +
+        '<span class="tour__count">Passo ' + contagem().pos + ' de ' + contagem().total + '</span>' +
         '<button type="button" class="tour__x" aria-label="Sair do tutorial" title="Sair do tutorial"><span class="mi" aria-hidden="true">close</span></button>' +
       '</div>' +
       '<h4 class="tour__title">' + passo.titulo + '</h4>' +
       '<p class="tour__text">' + passo.texto + '</p>' +
       (passo.acao ? '<div class="tour__acts">' + passo.acao + '</div>' : '') +
+      (passo.espera ? '<p class="tour__wait">' + (passo.dica || 'Faça a ação acima para liberar o Continuar') + '</p>' : '') +
       '<div class="tour__foot">' +
-        (passo.espera
-          ? '<span class="tour__wait">Faça a ação acima para continuar</span>'
-          : '<button type="button" class="btn btn--primary btn--sm tour__next">' +
-            (passoAtual === passos.length - 1 ? 'Concluir' : 'Avançar') + '</button>') +
+        (passo.concluir
+          ? '<button type="button" class="btn btn--ghost btn--sm tour__finish"><span class="mi" aria-hidden="true">check</span>Concluir</button>'
+          : '<button type="button" class="btn btn--ghost btn--sm tour__cancel"><span class="mi" aria-hidden="true">close</span>Cancelar</button>') +
+        '<button type="button" class="btn btn--primary btn--sm tour__next"' + (passo.espera ? ' disabled' : '') + '>' +
+          (ultimo ? '<span class="mi" aria-hidden="true">check</span>Concluir'
+                  : 'Continuar<span class="mi mi--fim" aria-hidden="true">arrow_forward</span>') + '</button>' +
       '</div>';
 
     caixa.querySelector('.tour__x').addEventListener('click', function () { termina(true); });
+    var cancela = caixa.querySelector('.tour__cancel');
+    if (cancela) cancela.addEventListener('click', function () { termina(true); });
+    // Passo de decisão: "Concluir" encerra com o essencial aprendido; "Continuar" segue para o resto.
+    var conclui = caixa.querySelector('.tour__finish');
+    if (conclui) conclui.addEventListener('click', function () {
+      termina(false);
+      UI.toast('Tutorial concluído. Para rever, clique em “Como usar”.', 'ok');
+    });
 
-    // Um passo pode ter mais de um jeito de ser cumprido (o botão do tutorial e
-    // a ação manual, por exemplo). Sem esta trava, os dois disparam e o passo
-    // seguinte é pulado.
+    // Só este botão avança. Sem a trava, um duplo clique pularia o passo seguinte.
     var avancou = false;
-    function feito() {
-      if (avancou) return;
+    var next = caixa.querySelector('.tour__next');
+    next.addEventListener('click', function () {
+      if (avancou || next.disabled) return;
       avancou = true;
       avanca();
+    });
+
+    // Passos que pedem uma ação liberam o Continuar quando ela acontece. Isso NÃO avança.
+    function libera() {
+      next.disabled = false;
+      var w = caixa && caixa.querySelector('.tour__wait');
+      if (w) w.hidden = true;
     }
 
-    var next = caixa.querySelector('.tour__next');
-    if (next) next.addEventListener('click', feito);
-
-    if (passo.ligar) passo.ligar(alvo, feito);
+    if (passo.ligar) passo.ligar(alvo, libera);
 
     // Reposiciona enquanto a página se mexe.
-    var repos = function () { posiciona(alvoEfetivo(alvo)); };
+    var repos = function () { posiciona(alvoEfetivo(resolve() || alvo)); };
     setTimeout(repos, 120);   // depois do scroll suave
+    setTimeout(repos, 900);   // depois de conteúdo assíncrono (ex.: galeria)
     repos();
     window.addEventListener('resize', repos);
     window.addEventListener('scroll', repos, true);
@@ -256,7 +388,7 @@
     desmontaCena();
     ativo = false;
     marcaVisto();
-    if (saiuNoMeio) UI.toast('Tutorial encerrado. Ele fica em “Como usar”.', 'info');
+    if (saiuNoMeio) UI.toast('Tutorial encerrado. Para rever, clique em “Como usar”.', 'info');
   }
 
   function comeca() {
@@ -273,6 +405,8 @@
   }
 
   // ---------- Os passos ----------
+  // Propriedades de um passo: alvo (seletor ou função), titulo, texto, acao (HTML extra),
+  // espera (Continuar desligado até libera()), dica, ligar(alvo, libera), aoEntrar, atraso, pular.
   function montaPassos() {
     var variante = nomeDe('VARIANTES', EXEMPLO.variante);
     var elemento = nomeDe('ELEMENTOS', EXEMPLO.elemento);
@@ -281,121 +415,154 @@
     var lista = [
       {
         alvo: '#dropzone',
-        titulo: 'Comece pela imagem de fundo',
-        texto: 'Todo banner parte de uma foto. Vamos criar juntos um banner novo para a categoria ' +
-               '<strong>' + EXEMPLO.categoria + '</strong>, no mesmo estilo dos que já estão em Banners salvos. ' +
-               'Use a foto de exemplo para acompanhar.',
-        acao: '<button type="button" class="btn btn--primary btn--sm" id="tourImg">Usar a foto de exemplo</button>',
+        titulo: 'Imagem de fundo',
+        texto: 'Todo banner parte de uma foto. Vamos criar um banner para <strong>' + EXEMPLO.categoria + '</strong>. ' +
+               'Use a foto de exemplo ou envie a sua.',
+        acao: '<button type="button" class="btn btn--ghost btn--sm" id="tourImg"><span class="mi" aria-hidden="true">add_photo_alternate</span>Usar a foto de exemplo</button>',
         espera: true,
-        ligar: function (alvo, feito) {
+        dica: 'Escolha uma imagem para continuar',
+        ligar: function (alvo, libera) {
           var b = caixa.querySelector('#tourImg');
+          if (window.AffemgCreator && AffemgCreator.hasImage && AffemgCreator.hasImage()) libera();
           b.addEventListener('click', function () {
             b.disabled = true; b.textContent = 'Carregando…';
             AffemgCreator.usarImagem(EXEMPLO.imagem)
-              .then(feito)
+              .then(function () { b.textContent = 'Foto aplicada'; libera(); })
               .catch(function (err) {
                 b.disabled = false; b.textContent = 'Tentar de novo';
                 UI.toast(err.message + ' Você pode enviar uma imagem sua e seguir.', 'erro');
               });
           });
           // Se a pessoa preferir enviar a própria imagem, também vale.
-          esperaEvento(document, 'affemg:banner', function (e) { return e.detail.temImagem; }, feito);
+          esperaEvento(document, 'affemg:banner', function (e) { return e.detail.temImagem; }, libera);
         },
       },
       {
         alvo: '#variantes',
-        titulo: 'Escolha o modelo de fundo',
-        texto: 'São dois: um mostra só a foto, o outro acrescenta uma textura por cima. ' +
-               'Para o nosso exemplo, selecione <strong>' + variante + '</strong>.',
-        espera: true,
-        ligar: function (alvo, feito) {
-          esperaEvento(document, 'affemg:banner',
-            function (e) { return e.detail.variante === EXEMPLO.variante; }, feito);
-        },
+        titulo: 'Modelo de fundo',
+        texto: '<strong>Imagem</strong> mostra só a foto. <strong>Imagem + textura</strong> acrescenta a textura da marca. ' +
+               'No exemplo, use <strong>' + variante + '</strong>.',
       },
       {
         alvo: '#elementos',
-        titulo: 'Escolha o elemento de marca',
-        texto: 'É a logo que aparece sobre a foto, em posições diferentes, ou a marca Vila Mares. ' +
-               'Selecione <strong>' + elemento + '</strong>.',
-        espera: true,
-        ligar: function (alvo, feito) {
-          esperaEvento(document, 'affemg:banner',
-            function (e) { return e.detail.elemento === EXEMPLO.elemento; }, feito);
-        },
+        titulo: 'Elemento de marca',
+        texto: 'A logo (ou a marca Vila Mares) que aparece sobre a foto. ' +
+               'No exemplo, use <strong>' + elemento + '</strong>.',
       },
       {
-        alvo: '#cardEscurecer',
-        titulo: 'Ajuste o acabamento',
-        texto: 'Escurecer ajuda quando a foto é clara demais e atrapalha a leitura. ' +
-               'O nosso exemplo usa esta opção <strong>ligada</strong>.',
-        espera: true,
-        ligar: function (alvo, feito) {
-          esperaEvento(document, 'affemg:banner',
-            function (e) { return e.detail.escurecer === EXEMPLO.escurecer; }, feito);
-        },
+        alvo: '#acabamento',
+        titulo: 'Acabamento',
+        texto: '<strong>Escurecer imagem</strong> melhora a leitura em fotos claras. ' +
+               '<strong>Efeito no rodapé</strong> desfoca a parte de baixo. ' +
+               'No exemplo, deixe as duas ligadas.',
       },
       {
         alvo: '#preview',
-        titulo: 'Confira o resultado',
-        texto: 'A prévia acompanha cada mudança em tempo real, no tamanho exato do app ' +
-               '(1024 por 640). É assim que ele vai aparecer para o associado.',
+        titulo: 'Prévia',
+        texto: 'Mostra o banner em tempo real, no tamanho exato do app (1024×640).',
       },
       {
         alvo: '#btnDownload',
-        titulo: 'Baixar direto',
-        texto: 'Este botão gera o arquivo WebP e baixa no seu computador, sem salvar nada. ' +
-               'Use quando o banner for de uso único.',
+        titulo: 'Salvar imagem',
+        texto: 'Gera o arquivo WebP e salva no seu computador, sem enviar ao projeto.',
       },
     ];
 
     // O resto do fluxo só existe com o backend ligado.
     if (temBackend) {
-      // Quem ainda não entrou precisa entender o login ANTES de ele aparecer,
-      // senão a tela de senha surge do nada no meio do tutorial.
-      if (!BK.getUser()) {
-        lista.push({
-          alvo: '#authWidget',
-          titulo: 'Por que existe login',
-          texto: 'Baixar um banner não exige conta. Já <strong>salvar</strong> sim, por dois motivos: ' +
-                 'a ferramenta registra quem criou cada banner, e assim você pode remover os seus ' +
-                 'sem correr o risco de apagar o de outra pessoa. ' +
-                 'No próximo passo ele vai pedir seu e-mail e senha. É esperado.',
-        });
-      }
+      var semLogin = function () { return !BK.getUser(); };
+      var comLogin = function () { return !!BK.getUser(); };
 
+      // Ponto de decisão: o essencial (criar e salvar a imagem) acabou aqui.
       lista.push({
         alvo: '#btnSave',
-        titulo: 'Salvar para a equipe',
-        texto: 'Salvar publica o banner numa categoria, e a partir daí ele fica disponível para todo mundo. ' +
-               'Clique em <strong>Salvar no projeto</strong>' +
-               (BK.getUser() ? '.' : ' e faça o login quando ele pedir.'),
+        titulo: 'O essencial está pronto',
+        texto: 'Você já sabe montar o banner e salvar a imagem. ' +
+               'Quer ver também como publicá-lo para a equipe?',
+        concluir: true,
+      });
+
+      // --- Quem ainda não entrou: como funciona o acesso, em etapas ---
+      lista.push({
+        alvo: '#btnSave',
+        titulo: 'Salvar no projeto exige acesso',
+        texto: 'Salvar no projeto publica o banner para toda a equipe e registra quem o criou, ' +
+               'para que você só remova os seus. Por isso é preciso ter uma conta.',
+        pular: comLogin,
+      });
+      lista.push({
+        alvo: '#authWidget',
+        titulo: 'Como pedir acesso',
+        texto: '<ol class="tour__steps">' +
+                 '<li>Peça acesso com seu nome e e-mail.</li>' +
+                 '<li>Um administrador aprova o pedido.</li>' +
+                 '<li>Você recebe um e-mail para criar a senha.</li>' +
+               '</ol>',
+        acao: '<button type="button" class="btn btn--ghost btn--sm" id="tourPedir">' +
+                '<span class="mi" aria-hidden="true">person_add</span>Solicitar acesso</button>',
+        pular: comLogin,
+        ligar: function () {
+          caixa.querySelector('#tourPedir').addEventListener('click', function () {
+            UI.openSolicitarAcesso();
+          });
+        },
+      });
+      lista.push({
+        alvo: '#authWidget',
+        titulo: 'Já tem acesso?',
+        texto: 'Entre com e-mail e senha. Se esquecer a senha, use <strong>Esqueci minha senha</strong> ' +
+               'na tela de entrada. Depois de entrar, o tutorial continua.',
+        acao: '<button type="button" class="btn btn--ghost btn--sm" id="tourEntrar">' +
+                '<span class="mi" aria-hidden="true">login</span>Entrar</button>',
+        pular: comLogin,
+        ligar: function () {
+          caixa.querySelector('#tourEntrar').addEventListener('click', function () {
+            UI.openLogin();
+          });
+          // Entrou durante este passo: avisa e segue com o Continuar (que não é automático).
+          var sair = BK.onAuth(function (user) {
+            if (!user || !caixa) return;
+            var t = caixa.querySelector('.tour__text');
+            if (t) t.innerHTML = 'Você entrou. Clique em <strong>Continuar</strong> para salvar o banner.';
+            var acts = caixa.querySelector('.tour__acts');
+            if (acts) acts.hidden = true;
+          });
+          limpezas.push(sair);
+        },
+      });
+
+      // --- Salvar no projeto (com acesso) ---
+      lista.push({
+        alvo: '#btnSave',
+        titulo: 'Salvar no projeto',
+        texto: 'Publica o banner para toda a equipe. Clique em <strong>Salvar no projeto</strong>.',
         espera: true,
-        ligar: function (alvo, feito) {
-          // Avança só quando o formulário de salvar estiver na tela. Se houver
-          // login pelo caminho, ele aparece antes e este passo continua esperando.
-          esperaElemento('#sNome', function () { setTimeout(feito, 250); });
+        dica: 'Abra o formulário de salvar para continuar',
+        pular: semLogin,
+        ligar: function (alvo, libera) {
+          // Libera quando o formulário de salvar estiver na tela.
+          esperaElemento('#sNome', libera);
         },
       });
 
       lista.push({
         alvo: function () { return $('#sGrupo') || $('.modal__box') || $('#btnSave'); },
         titulo: 'Nome e categoria',
-        texto: 'O <strong>nome</strong> é como o banner aparece na lista, então vale ser descritivo. ' +
-               'A <strong>categoria</strong> é o assunto: escolha <strong>' + EXEMPLO.categoria +
-               '</strong>, que já existe, em vez de criar uma nova. ' +
-               'Depois clique em <strong>Salvar</strong>.',
+        texto: 'Dê um <strong>nome</strong> descritivo e escolha a categoria <strong>' + EXEMPLO.categoria +
+               '</strong>. Depois clique em <strong>Salvar</strong>.',
         espera: true,
-        ligar: function (alvo, feito) {
+        dica: 'Salve o banner para continuar',
+        pular: semLogin,
+        ligar: function (alvo, libera) {
           var resolvido = false;
           var antes = null;
           BK.listBanners().then(function (bs) { antes = bs.length; }).catch(function () {});
 
-          // Avança quando o banner realmente entra na lista.
+          // Libera quando o banner realmente entra na lista.
           var iv = setInterval(function () {
             if (antes === null || resolvido) return;
             BK.listBanners().then(function (bs) {
-              if (bs.length > antes) { resolvido = true; clearInterval(iv); feito(); }
+              if (bs.length > antes) { resolvido = true; clearInterval(iv); libera(); }
             }).catch(function () {});
           }, 2000);
 
@@ -412,7 +579,7 @@
                 if (resolvido) return;
                 BK.listBanners().then(function (bs) {
                   if (antes !== null && bs.length > antes) {
-                    resolvido = true; clearInterval(iv); feito();
+                    resolvido = true; clearInterval(iv); libera();
                   } else {
                     resolvido = true; clearInterval(iv); obs.disconnect(); voltar();
                   }
@@ -430,35 +597,32 @@
 
       lista.push({
         alvo: '#tabSalvos',
-        titulo: 'Salvo. Agora veja onde ele foi parar',
-        texto: 'Seu banner já está publicado. Clique em <strong>Banners salvos</strong> ' +
-               'para encontrá-lo dentro da categoria <strong>' + EXEMPLO.categoria + '</strong>, ' +
-               'junto com tudo que a equipe já publicou.',
-        espera: true,
-        ligar: function (alvo, feito) {
-          esperaEvento(alvo, 'click', null, function () { setTimeout(feito, 600); });
-        },
+        titulo: 'Banner salvo',
+        texto: 'Ele já está publicado. Ao continuar, abrimos <strong>Banners salvos</strong>, ' +
+               'na categoria <strong>' + EXEMPLO.categoria + '</strong>.',
+        pular: semLogin,
       });
       lista.push({
         alvo: function () { return $('#salvos .gcard') || $('#salvos') || $('#salvosMsg'); },
-        titulo: 'Baixe quando precisar',
-        texto: 'Cada banner tem <strong>Baixar</strong>, e clicando na imagem você amplia. ' +
-               'A estrela marca a opção recomendada de cada categoria. ' +
-               'Você remove os banners que criou; o administrador gerencia todos.',
+        titulo: 'Baixar e ampliar',
+        texto: 'Use <strong>Baixar</strong> em cada banner e clique na imagem para ampliar. ' +
+               'A estrela marca a opção recomendada. Você remove só os seus.',
+        aoEntrar: function () { if (window.AffemgTabs) AffemgTabs.activate('salvos'); },
+        atraso: 700,
+        pular: semLogin,
       });
       lista.push({
         alvo: function () { return $('#salvos .setcard') || $('#salvos') || $('#salvosMsg'); },
-        titulo: 'Conjuntos em um clique',
-        texto: 'O conjunto <strong>Recomendados</strong> junta a melhor opção de cada categoria ' +
-               'num único arquivo .zip. É o caminho mais rápido quando você precisa de tudo.',
+        titulo: 'Conjuntos',
+        texto: '<strong>Recomendados</strong> reúne a melhor opção de cada categoria num único .zip.',
+        pular: semLogin,
       });
     }
 
     lista.push({
       alvo: '#btnTutorial',
-      titulo: 'É isso',
-      texto: 'Você já sabe criar, salvar e baixar. Este botão fica sempre neste canto: ' +
-             'clique em <strong>Como usar</strong> quando quiser rever o tutorial.',
+      titulo: 'Pronto',
+      texto: 'Você já sabe criar, salvar e baixar. Para rever o tutorial, clique em <strong>Como usar</strong>.',
     });
 
     return lista;
@@ -470,7 +634,9 @@
     if (btn) btn.addEventListener('click', function () { comeca(); });
 
     // Primeiro acesso: espera um pouco para a tela assentar.
-    if (!jaViu()) setTimeout(boasVindas, 700);
+    // Em desenvolvimento (localhost) as boas-vindas abrem sempre, para testar; em produção só no primeiro acesso.
+    var dev = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    if (dev || !jaViu()) setTimeout(boasVindas, 700);
   });
 
   window.AffemgTutorial = { comeca: comeca, boasVindas: boasVindas };
