@@ -19,7 +19,7 @@
     overlay.hidden = true;
     overlay.innerHTML =
       '<div class="lightbox__inner" role="dialog" aria-modal="true" aria-label="Pré-visualização do banner">' +
-        '<button type="button" class="lightbox__close" aria-label="Fechar (Esc)"><span class="mi" aria-hidden="true">close</span></button>' +
+        '<button type="button" class="lightbox__close" aria-label="Fechar (Esc)" title="Fechar (Esc)"><span class="mi" aria-hidden="true">close</span></button>' +
         '<img class="lightbox__img" alt="">' +
         '<div class="lightbox__bar">' +
           '<span class="lightbox__name"></span>' +

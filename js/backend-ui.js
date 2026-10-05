@@ -133,7 +133,7 @@
     t.innerHTML =
       '<span class="toast__icon">' + ICONES[tipo] + '</span>' +
       '<span class="toast__text">' + esc(texto) + '</span>' +
-      '<button type="button" class="toast__x" aria-label="Fechar"><span class="mi" aria-hidden="true">close</span></button>';
+      '<button type="button" class="toast__x" aria-label="Fechar" title="Fechar"><span class="mi" aria-hidden="true">close</span></button>';
     toastArea().appendChild(t);
 
     var saindo = false;
@@ -409,10 +409,10 @@
     var w = $('#authWidget'); w.hidden = false;
     if (user) {
       w.innerHTML = '<span class="auth__user" title="' + esc(user.email) + '">' + esc(user.email) +
-        (BK.isAdmin() ? ' · admin' : '') + '</span><button class="btn btn--ghost btn--sm" id="btnLogout">Sair</button>';
+        (BK.isAdmin() ? ' · admin' : '') + '</span><button class="btn btn--ghost btn--sm" id="btnLogout"><span class="mi" aria-hidden="true">logout</span>Sair</button>';
       w.querySelector('#btnLogout').addEventListener('click', function () { BK.signOut(); });
     } else {
-      w.innerHTML = '<button class="btn btn--primary btn--sm" id="btnLogin">Entrar</button>';
+      w.innerHTML = '<button class="btn btn--primary btn--sm" id="btnLogin"><span class="mi" aria-hidden="true">login</span>Entrar</button>';
       w.querySelector('#btnLogin').addEventListener('click', function () { openLogin(); });
     }
   }
@@ -523,7 +523,7 @@
     var titulo = esc(b.titulo);
     card.innerHTML =
       (b.recomendado ? '<span class="badge-reco"><span class="mi" aria-hidden="true">star</span> Recomendado</span>' : '') +
-      '<button type="button" class="gcard__imgbtn" aria-label="Ampliar"><img class="gcard__img" src="' + src + '" alt="' + titulo + '" loading="lazy"><span class="gcard__zoom"><span class="mi" aria-hidden="true">zoom_in</span> Ampliar</span></button>' +
+      '<button type="button" class="gcard__imgbtn" aria-label="Ampliar" title="Ampliar"><img class="gcard__img" src="' + src + '" alt="' + titulo + '" loading="lazy"><span class="gcard__zoom"><span class="mi" aria-hidden="true">zoom_in</span> Ampliar</span></button>' +
       '<figcaption class="gcard__body">' +
         '<span class="gcard__name">' + titulo + '<br><small class="gcard__by">' + esc(b.owner_email || '') + '</small></span>' +
         '<span class="gcard__acts">' +

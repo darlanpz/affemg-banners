@@ -71,17 +71,43 @@
   }
 
   // ---------- Cartões de escolha ----------
-  function buildChoices(containerId, items, key) {
+  // Ilustrações do "Modelo de fundo": miniaturas quadradas de uma cena genérica (não é a imagem do usuário),
+  // só para mostrar a diferença entre as opções. A "textura" repete o padrão de losangos da marca.
+  var CENA =
+    '<rect width="80" height="80" fill="url(#GRAD)"/>' +
+    '<polygon points="0,80 0,50 20,32 34,46 52,26 80,52 80,80" fill="#0a3a66"/>' +
+    '<polygon points="0,80 0,64 16,52 32,64 50,56 80,66 80,80" fill="#03172b"/>';
+  function ilustracao(id) {
+    var g = 'il' + id;
+    var textura = id === '02';
+    return '<svg viewBox="0 0 80 80" aria-hidden="true" focusable="false">' +
+      '<defs><linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="#6fbdf2"/><stop offset="1" stop-color="#1d6fae"/></linearGradient>' +
+        (textura ? '<pattern id="' + g + 't" width="20" height="20" patternUnits="userSpaceOnUse">' +
+          '<path d="M10 0L20 10L10 20L0 10Z" fill="none" stroke="#fff" stroke-width="3.5" opacity=".85"/></pattern>' : '') +
+      '</defs>' + CENA.replace('GRAD', g) +
+      (textura ? '<rect width="80" height="80" fill="url(#' + g + 't)"/>' : '') +
+      '</svg>';
+  }
+  var DESCRICOES = {
+    '01': 'Exibir apenas a imagem de fundo',
+    '02': 'Aplicar uma textura sobreposta',
+  };
+
+  function buildChoices(containerId, items, key, comIlustracao) {
     var box = document.getElementById(containerId);
     box.innerHTML = '';
     items.forEach(function (item) {
       var label = document.createElement('label');
-      label.className = 'choice' + (state[key] === item.id ? ' is-sel' : '');
+      label.className = 'choice' + (comIlustracao ? ' choice--ilus' : '') + (state[key] === item.id ? ' is-sel' : '');
       label.innerHTML =
         '<span class="choice__dot"></span>' +
         '<input type="radio" name="' + key + '" value="' + item.id + '"' +
         (state[key] === item.id ? ' checked' : '') + '>' +
-        '<span>' + item.nome + '</span>';
+        (comIlustracao ? '<span class="choice__thumb">' + ilustracao(item.id) + '</span>' : '') +
+        (comIlustracao
+          ? '<span class="choice__txt"><strong>' + item.nome + '</strong><span class="choice__desc">' + (DESCRICOES[item.id] || '') + '</span></span>'
+          : '<span>' + item.nome + '</span>');
       label.querySelector('input').addEventListener('change', function () {
         state[key] = item.id;
         box.querySelectorAll('.choice').forEach(function (c) { c.classList.remove('is-sel'); });
@@ -252,7 +278,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     initTabs();
-    buildChoices('variantes', B.VARIANTES, 'variante');
+    buildChoices('variantes', B.VARIANTES, 'variante', true);
     buildChoices('elementos', B.ELEMENTOS, 'elemento');
     initUpload();
     initToggles();

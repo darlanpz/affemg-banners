@@ -31,7 +31,8 @@ Idioma do projeto e da UI: português (pt-BR). Detalhes: `README.md` e `SUPABASE
 | `js/admin-ui.js` | Aba Usuários / solicitações / notificações |
 | `js/onboarding.js` | Boas-vindas + tutorial |
 | `js/vendor/` | fflate e supabase-js embutidos (sem CDN) |
-| `assets/fonts/` | Material Symbols Outlined (woff2 variável, auto-hospedado, **só os ícones usados**). Uso: `<span class="mi" aria-hidden="true">nome</span>`; espessura em `.mi` (`'wght' 300`, de 100 a 700) |
+| `assets/fonts/archivo-*.woff2` | Fonte **Archivo** (variável 100–900, latin + latin-ext), padrão do projeto via `--font` em `css/styles.css` |
+| `assets/fonts/material-symbols-*.woff2` | Material Symbols Outlined (woff2 variável, auto-hospedado, **só os ícones usados**). Uso: `<span class="mi" aria-hidden="true">nome</span>`; espessura em `.mi` (`'wght' 300`, de 100 a 700) |
 | `supabase/sql/` | `usuarios.sql`, `solicitacoes.sql` (rodar no SQL Editor) |
 | `supabase/functions/admin-users/index.ts` | Edge Function (Deno): criar/remover usuários, aviso por e-mail via SMTP |
 | `supabase/emails/` | Templates HTML dos e-mails do Auth |
@@ -67,10 +68,11 @@ Novas URLs de produção devem ser adicionadas em Supabase → Authentication �
 ## Ícones (Material Symbols)
 
 O woff2 contém só os ícones em uso (4 KB). **Ao usar um ícone novo, regenere a fonte** com a lista completa
-em ordem alfabética (ícones atuais: add_photo_alternate, check_circle, close, download, error, help, info, notifications, save, star, upload, visibility, visibility_off, zoom_in):
+em ordem alfabética (ícones atuais: add_photo_alternate, check_circle, close, download, error, help, info, login, logout, notifications, save, star, upload, visibility, visibility_off, zoom_in):
 
 ```bash
 CSS=$(curl -sS -A "Mozilla/5.0 Chrome/124.0.0.0" "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&icon_names=<lista,ordenada>&display=block")
 curl -sS -o assets/fonts/material-symbols-outlined.woff2 "$(echo "$CSS" | grep -o 'https://[^)]*')"
 ```
+Depois de regenerar, suba o `?v=N` da fonte em `css/styles.css` e `index.html` (evita cache velho).
 Os nomes são os do catálogo Material **Symbols** (ex.: `notifications`, não `notifications_none`).

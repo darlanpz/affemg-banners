@@ -7,7 +7,8 @@
   <meta name="description" content="Baixe banners prontos ou crie novos banners para o app AFFEMG.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="apple-touch-icon" href="assets/favicon.svg">
-  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2?v=3" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -27,7 +28,7 @@
       </nav>
       <div class="topbar__right">
         <div class="notif" id="notif" hidden>
-          <button type="button" class="notif__btn" id="btnNotif" aria-label="Notificações" aria-haspopup="true" aria-expanded="false">
+          <button type="button" class="notif__btn" id="btnNotif" aria-label="Notificações" title="Notificações" aria-haspopup="true" aria-expanded="false">
             <span class="mi" aria-hidden="true">notifications</span>
             <span class="notif__badge" id="notifBadge" hidden>0</span>
           </button>
@@ -60,7 +61,7 @@
 
           <fieldset class="field">
             <legend>Modelo de fundo</legend>
-            <div class="choices" id="variantes"></div>
+            <div class="choices choices--stack" id="variantes"></div>
           </fieldset>
 
           <fieldset class="field">
@@ -133,7 +134,7 @@
   </footer>
 
   <!-- Botão flutuante do tutorial -->
-  <button type="button" class="fab" id="btnTutorial" aria-label="Como usar a ferramenta">
+  <button type="button" class="fab" id="btnTutorial" aria-label="Como usar a ferramenta" title="Como usar a ferramenta">
     <span class="mi fab__icon" aria-hidden="true">help</span>
     <span class="fab__txt">Como usar</span>
   </button>
