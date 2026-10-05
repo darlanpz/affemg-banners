@@ -221,9 +221,14 @@
     if (top < 10) {
       // Não coube nem em cima nem embaixo. Ao lado de um modal, encostar no
       // rodapé é melhor do que centralizar, que cairia por cima dele.
-      top = noModal ? Math.max(10, window.innerHeight - ch - 10)
+      // Em tela estreita (alvo alto, como a lista de opções) a caixa também vai para o rodapé.
+      var estreita = window.innerWidth <= 560;
+      top = (noModal || estreita) ? Math.max(10, window.innerHeight - ch - 10)
                     : Math.max(10, (window.innerHeight - ch) / 2);
     }
+
+    // Celular: a caixa fica sempre no rodapé, sem cobrir o alvo.
+    if (window.innerWidth <= 560) top = Math.max(10, window.innerHeight - ch - 10);
 
     var left = r.left + r.width / 2 - cw / 2;  // centralizado no alvo
     left = Math.max(10, Math.min(left, window.innerWidth - cw - 10));
@@ -305,6 +310,16 @@
     return { pos: pos, total: Math.max(total, pos) };
   }
 
+  // Leva o alvo para a vista. No celular a caixa fica fixa no rodapé (como uma folha), então o
+  // alvo é centralizado só na área livre acima dela, ou alinhado ao topo se for mais alto que ela.
+  function rola(alvo) {
+    if (window.innerWidth > 560) { alvo.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
+    var livre = window.innerHeight - caixa.offsetHeight - 30;
+    var r = alvo.getBoundingClientRect();
+    var desejado = Math.max(12, (livre - r.height) / 2);
+    window.scrollBy({ top: r.top - desejado, behavior: 'smooth' });
+  }
+
   function desenha(passo) {
     var resolve = function () { return typeof passo.alvo === 'function' ? passo.alvo() : $(passo.alvo); };
     var alvo = resolve();
@@ -313,8 +328,6 @@
       return avanca();
     }
     caixa.style.visibility = '';
-
-    alvo.scrollIntoView({ block: 'center', behavior: 'smooth' });
 
     var ultimo = passoAtual === passos.length - 1;
     caixa.innerHTML =
@@ -334,6 +347,8 @@
           (ultimo ? '<span class="mi" aria-hidden="true">check</span>Concluir'
                   : 'Continuar<span class="mi mi--fim" aria-hidden="true">arrow_forward</span>') + '</button>' +
       '</div>';
+
+    rola(alvo);
 
     caixa.querySelector('.tour__x').addEventListener('click', function () { termina(true); });
     var cancela = caixa.querySelector('.tour__cancel');
