@@ -68,7 +68,7 @@ Novas URLs de produção devem ser adicionadas em Supabase → Authentication �
 ## Ícones (Material Symbols)
 
 O woff2 contém só os ícones em uso (4 KB). **Ao usar um ícone novo, regenere a fonte** com a lista completa
-em ordem alfabética (ícones atuais: add_photo_alternate, check_circle, close, download, error, help, info, login, logout, notifications, save, star, upload, visibility, visibility_off, zoom_in):
+em ordem alfabética (ícones atuais: add_photo_alternate, check, check_circle, close, download, error, help, info, login, logout, notifications, save, star, upload, visibility, visibility_off, zoom_in):
 
 ```bash
 CSS=$(curl -sS -A "Mozilla/5.0 Chrome/124.0.0.0" "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,100..700,0,0&icon_names=<lista,ordenada>&display=block")

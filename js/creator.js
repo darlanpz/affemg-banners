@@ -71,43 +71,76 @@
   }
 
   // ---------- Cartões de escolha ----------
-  // Ilustrações do "Modelo de fundo": miniaturas quadradas de uma cena genérica (não é a imagem do usuário),
-  // só para mostrar a diferença entre as opções. A "textura" repete o padrão de losangos da marca.
+  // Cada opção é um cartão com miniatura quadrada (40px) + nome + frase de apoio, sem o círculo do radio.
+  // Miniaturas do "Modelo de fundo" e do "Acabamento": cena genérica (não é a imagem do usuário).
+  // As do "Elemento de marca" são o próprio compositor (buildSVG) sobre um céu de exemplo, recortadas
+  // em quadrado, então mostram exatamente o que cada opção desenha. Vão em <img> para os ids do SVG
+  // não colidirem com os do preview.
   var CENA =
     '<rect width="80" height="80" fill="url(#GRAD)"/>' +
     '<polygon points="0,80 0,50 20,32 34,46 52,26 80,52 80,80" fill="#0a3a66"/>' +
     '<polygon points="0,80 0,64 16,52 32,64 50,56 80,66 80,80" fill="#03172b"/>';
-  function ilustracao(id) {
+  function cena(id, defsExtra, overlay) {
     var g = 'il' + id;
-    var textura = id === '02';
     return '<svg viewBox="0 0 80 80" aria-hidden="true" focusable="false">' +
       '<defs><linearGradient id="' + g + '" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0" stop-color="#6fbdf2"/><stop offset="1" stop-color="#1d6fae"/></linearGradient>' +
-        (textura ? '<pattern id="' + g + 't" width="20" height="20" patternUnits="userSpaceOnUse">' +
-          '<path d="M10 0L20 10L10 20L0 10Z" fill="none" stroke="#fff" stroke-width="3.5" opacity=".85"/></pattern>' : '') +
-      '</defs>' + CENA.replace('GRAD', g) +
-      (textura ? '<rect width="80" height="80" fill="url(#' + g + 't)"/>' : '') +
-      '</svg>';
+        (defsExtra || '').replace(/ID/g, g) +
+      '</defs>' + CENA.replace('GRAD', g) + (overlay || '').replace(/ID/g, g) + '</svg>';
+  }
+  function ilustraVariante(id) {
+    var textura = id === '02';
+    return cena(id,
+      textura ? '<pattern id="IDt" width="20" height="20" patternUnits="userSpaceOnUse">' +
+        '<path d="M10 0L20 10L10 20L0 10Z" fill="none" stroke="#fff" stroke-width="3.5" opacity=".85"/></pattern>' : '',
+      textura ? '<rect width="80" height="80" fill="url(#IDt)"/>' : '');
+  }
+  function ilustraAcabamento(id) {
+    if (id === 'escurecer') return cena('esc', '', '<rect width="80" height="80" fill="#000" opacity=".45"/>');
+    return cena('rod',
+      '<linearGradient id="IDf" x1="0" y1="0" x2="0" y2="1"><stop offset=".4" stop-opacity="0"/><stop offset="1" stop-opacity=".9"/></linearGradient>',
+      '<rect width="80" height="80" fill="url(#IDf)"/>');
+  }
+  var CEU = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="640"><defs>' +
+    '<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fbdf2"/>' +
+    '<stop offset="1" stop-color="#1d6fae"/></linearGradient></defs><rect width="1024" height="640" fill="url(#g)"/></svg>');
+  // Início (x) do recorte quadrado de 640px, de modo que o elemento caiba na miniatura.
+  var RECORTE = { padrao: 192, cima: 255, direita: 384, vertical: 192, vilamares: 192 };
+  function ilustraElemento(id) {
+    var svg = B.buildSVG({ variante: '01', elemento: id, imageHref: CEU, footer: false })
+      .replace('width="1024" height="640" viewBox="0 0 1024 640"',
+               'width="80" height="80" viewBox="' + (RECORTE[id] || 192) + ' 0 640 640"');
+    return '<img alt="" width="40" height="40" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) + '">';
   }
   var DESCRICOES = {
     '01': 'Exibir apenas a imagem de fundo',
-    '02': 'Aplicar uma textura sobreposta',
+    '02': 'Aplicar uma textura da marca sobreposta',
+    padrao: 'Apenas a imagem, sem logo ou marca',
+    cima: 'Logo AFFEMG centralizada no topo',
+    direita: 'Logo AFFEMG no canto direito',
+    vertical: 'Logo AFFEMG em composição vertical',
+    vilamares: 'Marca Vila Mares, com sol e onda',
+    escurecer: 'Camada escura sobre a imagem para destacar o conteúdo',
+    footer: 'Desfoque e degradê escuro na parte de baixo',
   };
 
-  function buildChoices(containerId, items, key, comIlustracao) {
+  function cartaoTexto(nome, desc) {
+    return '<span class="choice__txt"><strong>' + nome + '</strong><span class="choice__desc">' + desc + '</span></span>';
+  }
+
+  // ilus: função id -> HTML da miniatura.
+  function buildChoices(containerId, items, key, ilus) {
     var box = document.getElementById(containerId);
     box.innerHTML = '';
     items.forEach(function (item) {
       var label = document.createElement('label');
-      label.className = 'choice' + (comIlustracao ? ' choice--ilus' : '') + (state[key] === item.id ? ' is-sel' : '');
+      label.className = 'choice choice--ilus' + (state[key] === item.id ? ' is-sel' : '');
       label.innerHTML =
-        '<span class="choice__dot"></span>' +
         '<input type="radio" name="' + key + '" value="' + item.id + '"' +
         (state[key] === item.id ? ' checked' : '') + '>' +
-        (comIlustracao ? '<span class="choice__thumb">' + ilustracao(item.id) + '</span>' : '') +
-        (comIlustracao
-          ? '<span class="choice__txt"><strong>' + item.nome + '</strong><span class="choice__desc">' + (DESCRICOES[item.id] || '') + '</span></span>'
-          : '<span>' + item.nome + '</span>');
+        '<span class="choice__thumb">' + ilus(item.id) + '</span>' +
+        cartaoTexto(item.nome, DESCRICOES[item.id] || '');
       label.querySelector('input').addEventListener('change', function () {
         state[key] = item.id;
         box.querySelectorAll('.choice').forEach(function (c) { c.classList.remove('is-sel'); });
@@ -116,6 +149,18 @@
         anunciaMudanca();
       });
       box.appendChild(label);
+    });
+  }
+
+  // Cartões do "Acabamento" (checkboxes): miniatura + marca de selecionado, como os radios.
+  function ligaAcabamento() {
+    [['cardEscurecer', 'escurecer'], ['cardFooter', 'footer']].forEach(function (par) {
+      var card = document.getElementById(par[0]);
+      card.querySelector('.choice__thumb').innerHTML = ilustraAcabamento(par[1]);
+      var input = card.querySelector('input');
+      var sync = function () { card.classList.toggle('is-sel', input.checked); };
+      input.addEventListener('change', sync);
+      sync();
     });
   }
 
@@ -131,13 +176,19 @@
       dz.classList.toggle('is-loading', on);
     }
 
+    // Nome do arquivo escapado, cortado com reticências (o campo não cresce) e completo no tooltip.
+    function nomeArquivo(nome) {
+      var n = String(nome).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      return '<u class="dropzone__file" title="' + n + '">' + n + '</u>';
+    }
+
     function handleFile(file) {
       if (!file || !/^image\//.test(file.type)) {
         aviso('Arquivo inválido', 'Selecione um arquivo de imagem (JPG ou PNG).');
         return;
       }
       setLoading(true);
-      text.innerHTML = 'Carregando <u>' + file.name + '</u>…';
+      text.innerHTML = 'Carregando ' + nomeArquivo(file.name) + '…';
       var reader = new FileReader();
       reader.onload = function (e) {
         var dataURI = e.target.result; // data: URI
@@ -147,7 +198,8 @@
         img.onload = function () {
           state.imageHref = dataURI;
           dz.classList.add('has-file');
-          text.innerHTML = 'Imagem carregada: <u>' + file.name + '</u> — clique para trocar';
+          dz.querySelector('.dropzone__icon .mi').textContent = 'check';
+          text.innerHTML = 'Imagem carregada: ' + nomeArquivo(file.name) + ', <span class="dropzone__nw">clique para trocar</span>';
           render();
           setLoading(false);
           anunciaMudanca();
@@ -192,7 +244,8 @@
   // ---------- Render + Download ----------
   function render() {
     $('#preview').innerHTML = B.buildSVG(state);
-    $('#previewEmpty').hidden = !!state.imageHref;
+    // O guia some com a imagem ou quando há um elemento de marca escolhido; "Sem elemento" sem imagem o traz de volta.
+    $('#previewEmpty').hidden = !!state.imageHref || state.elemento !== 'padrao';
     $('#btnDownload').disabled = !state.imageHref;
   }
 
@@ -260,6 +313,7 @@
             img.onload = function () {
               state.imageHref = dataURI;
               $('#dropzone').classList.add('has-file');
+              $('#dropzone .dropzone__icon .mi').textContent = 'check';
               $('#dropzoneText').innerHTML = 'Imagem de exemplo carregada';
               render();
               anunciaMudanca();
@@ -278,8 +332,9 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     initTabs();
-    buildChoices('variantes', B.VARIANTES, 'variante', true);
-    buildChoices('elementos', B.ELEMENTOS, 'elemento');
+    buildChoices('variantes', B.VARIANTES, 'variante', ilustraVariante);
+    buildChoices('elementos', B.ELEMENTOS, 'elemento', ilustraElemento);
+    ligaAcabamento();
     initUpload();
     initToggles();
     $('#btnDownload').addEventListener('click', download);

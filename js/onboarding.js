@@ -325,7 +325,7 @@
         },
       },
       {
-        alvo: '#tglEscurecer',
+        alvo: '#cardEscurecer',
         titulo: 'Ajuste o acabamento',
         texto: 'Escurecer ajuda quando a foto é clara demais e atrapalha a leitura. ' +
                'O nosso exemplo usa esta opção <strong>ligada</strong>.',

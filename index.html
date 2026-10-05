@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="apple-touch-icon" href="assets/favicon.svg">
   <link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2?v=3" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/material-symbols-outlined.woff2?v=4" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -66,19 +66,23 @@
 
           <fieldset class="field">
             <legend>Elemento de marca</legend>
-            <div class="choices choices--elem" id="elementos"></div>
+            <div class="choices choices--stack" id="elementos"></div>
           </fieldset>
 
           <fieldset class="field">
             <legend>Acabamento</legend>
-            <label class="switch">
-              <input type="checkbox" id="tglEscurecer">
-              <span>Escurecer imagem (40%)</span>
-            </label>
-            <label class="switch">
-              <input type="checkbox" id="tglFooter" checked>
-              <span>Efeito de rodapé (blur)</span>
-            </label>
+            <div class="choices choices--stack" id="acabamento">
+              <label class="choice choice--ilus" id="cardEscurecer">
+                <input type="checkbox" id="tglEscurecer">
+                <span class="choice__thumb"></span>
+                <span class="choice__txt"><strong>Escurecer imagem (40%)</strong><span class="choice__desc">Camada escura sobre a imagem para destacar o conteúdo</span></span>
+              </label>
+              <label class="choice choice--ilus" id="cardFooter">
+                <input type="checkbox" id="tglFooter" checked>
+                <span class="choice__thumb"></span>
+                <span class="choice__txt"><strong>Efeito de rodapé (blur)</strong><span class="choice__desc">Desfoque e degradê escuro na parte de baixo</span></span>
+              </label>
+            </div>
           </fieldset>
         </form>
 
