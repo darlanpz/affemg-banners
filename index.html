@@ -83,7 +83,18 @@
 
         <!-- Preview -->
         <div class="preview-col">
-          <div class="preview" id="preview" aria-label="Pré-visualização do banner"></div>
+          <div class="preview-wrap">
+            <div class="preview" id="preview" aria-label="Pré-visualização do banner"></div>
+            <!-- Estado vazio: guia o primeiro passo até haver uma imagem. Some sozinho em render(). -->
+            <div class="preview-empty" id="previewEmpty">
+              <div class="preview-empty__card">
+                <span class="preview-empty__icon" aria-hidden="true"><span class="mi">add_photo_alternate</span></span>
+                <h2 class="preview-empty__title">Seu banner aparece aqui</h2>
+                <p class="preview-empty__text">Envie uma imagem de fundo e acompanhe a montagem em tempo real, no tamanho exato do app.</p>
+                <button type="button" class="btn btn--primary" id="btnPickImage"><span class="mi" aria-hidden="true">upload</span>Escolher imagem</button>
+              </div>
+            </div>
+          </div>
           <div class="preview-actions">
             <span class="preview-meta">1024x640 - WebP</span>
             <button type="button" class="btn btn--primary" id="btnDownload"><span class="mi" aria-hidden="true">download</span>Salvar imagem</button>

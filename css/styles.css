@@ -116,12 +116,15 @@ body {
 /* Dropzone */
 .dropzone {
   display: flex; flex-direction: row; align-items: center; gap: 14px;
-  text-align: left; padding: 14px 16px; border: 2px dashed var(--line);
+  text-align: left; padding: 14px 16px; border: 1.5px solid var(--line); background: var(--white);
   border-radius: var(--radius-lg); cursor: pointer; color: var(--muted);
   transition: border-color .15s, background .15s;
 }
-.dropzone:hover, .dropzone:focus-visible, .dropzone.is-drag {
-  border-color: var(--blue); background: var(--blue-050); outline: none;
+/* Mesmo comportamento dos radio-buttons (.choice): hover cinza, ativo azul com anel interno. */
+.dropzone:hover { border-color: #b9c6d1; }
+.dropzone:focus-visible { outline: none; }
+.dropzone:focus-visible, .dropzone.is-drag {
+  border-color: var(--blue); background: var(--blue-050); box-shadow: inset 0 0 0 1px var(--blue);
 }
 .dropzone__icon {
   display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
@@ -133,7 +136,7 @@ body {
 .dropzone__text { font-size: 13.5px; color: var(--ink); }
 .dropzone__text u { color: var(--blue); font-weight: 600; text-decoration: none; }
 .dropzone__hint { font-size: 11.5px; }
-.dropzone.has-file { border-style: solid; border-color: var(--blue); background: var(--blue-050); }
+.dropzone.has-file { border-color: var(--blue); background: var(--blue-050); box-shadow: inset 0 0 0 1px var(--blue); }
 
 /* Choice cards */
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -164,6 +167,35 @@ body {
   overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 1024 / 640;
 }
 .preview svg { display: block; width: 100%; height: 100%; }
+.preview-wrap { position: relative; }
+
+/* Estado vazio do preview: card centralizado sobre o fundo escuro, com o próximo passo. */
+.preview-empty {
+  position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+  padding: 16px; border-radius: var(--radius-lg);
+}
+.preview-empty[hidden] { display: none; }
+.preview-empty__card {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
+  max-width: 380px; color: #fff;
+}
+.preview-empty__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(255, 255, 255, .14); color: #fff;
+}
+.preview-empty__icon .mi { font-size: 32px; }
+.preview-empty__title { margin: 8px 0 0; font-size: 22px; line-height: 1.25; color: #fff; }
+.preview-empty__text { margin: 0 0 12px; font-size: 14.5px; line-height: 1.5; color: rgba(255, 255, 255, .88); }
+/* Botão claro: o azul da marca some sobre o fundo escuro (contraste), então inverte. */
+.preview-empty .btn { background: #fff; color: var(--blue-dark); }
+.preview-empty .btn:hover { background: var(--blue-050); }
+.preview-empty .btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+@media (max-width: 560px) {
+  .preview-empty__card { gap: 4px; }
+  .preview-empty__icon, .preview-empty__text { display: none; }
+  .preview-empty__title { margin: 0 0 8px; font-size: 16px; }
+}
 /* Overlay de carregamento enquanto a imagem enviada é decodificada. */
 .preview.is-loading::before {
   content: ""; position: absolute; inset: 0; z-index: 1;
@@ -177,7 +209,7 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 /* Dropzone em estado de carregamento. */
-.dropzone.is-loading { border-color: var(--blue); background: var(--blue-050); cursor: progress; }
+.dropzone.is-loading { border-color: var(--blue); background: var(--blue-050); box-shadow: inset 0 0 0 1px var(--blue); cursor: progress; }
 .dropzone.is-loading .dropzone__icon { animation: spin .7s linear infinite; }
 .preview-actions {
   display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 14px; flex-wrap: wrap;
@@ -682,6 +714,6 @@ body.has-modal .fab, body.has-lightbox .fab, body.has-loading .fab { display: no
 .badge-reco { display: inline-flex; align-items: center; gap: 4px; }
 .badge-reco .mi { font-size: 15px; }
 
-/* O fundo da dropzone vira azul claro em hover/arquivo/carregando: o círculo do ícone passa a branco. */
-.dropzone:hover .dropzone__icon, .dropzone:focus-visible .dropzone__icon, .dropzone.is-drag .dropzone__icon,
+/* O fundo da dropzone vira azul claro em foco/arrastar/arquivo/carregando: o círculo do ícone passa a branco. */
+.dropzone:focus-visible .dropzone__icon, .dropzone.is-drag .dropzone__icon,
 .dropzone.has-file .dropzone__icon, .dropzone.is-loading .dropzone__icon { background: var(--white); }

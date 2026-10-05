@@ -166,6 +166,7 @@
   // ---------- Render + Download ----------
   function render() {
     $('#preview').innerHTML = B.buildSVG(state);
+    $('#previewEmpty').hidden = !!state.imageHref;
     $('#btnDownload').disabled = !state.imageHref;
   }
 
@@ -256,6 +257,7 @@
     initUpload();
     initToggles();
     $('#btnDownload').addEventListener('click', download);
+    $('#btnPickImage').addEventListener('click', function () { $('#fileInput').click(); });
     render();
   });
 })();
