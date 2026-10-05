@@ -29,23 +29,37 @@ jobs:
 
           echo "Disparando ping para o Supabase..."
           
-          # Consulta leve na tabela banners com retry automático (conta como atividade real no banco)
-          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+          # Escreve na tabela heartbeat (supabase/sql/heartbeat.sql): atividade real de escrita no banco.
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          code=$(curl -sS -o resp.json -w "%{http_code}" \
             --retry 3 --retry-delay 5 --max-time 30 \
-            "$CLEAN_URL/rest/v1/banners?select=id&limit=1" \
+            -X PATCH "$CLEAN_URL/rest/v1/heartbeat?id=eq.1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY") || code="000"
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d "{\"ping\":\"$NOW\"}") || code="000"
 
           echo "Código retornado: $code"
+          cat resp.json 2>/dev/null; echo
 
-          # Só 200/206 provam que o Postgres respondeu. 000 (sem conexão), 5xx e 52x
-          # (Cloudflare: origem fora do ar) indicam projeto pausado ou banco fora.
+          # 000 (sem conexão), 5xx e 52x (Cloudflare: origem fora do ar) = projeto pausado ou banco fora.
           case "$code" in
-            200|206) ;;
-            *)
+            200) ;;
+            000|5*)
               echo "::error::Ping falhou (HTTP $code). Provavelmente o projeto está PAUSADO: abra o painel do Supabase e clique em Restore project."
+              exit 1
+              ;;
+            *)
+              echo "::error::Ping falhou (HTTP $code). Confira os secrets SUPABASE_URL/SUPABASE_ANON_KEY e se supabase/sql/heartbeat.sql foi rodado."
               exit 1
               ;;
           esac
 
-          echo "Ping realizado com sucesso (HTTP $code) — projeto mantido ativo."
+          # PATCH em linha inexistente devolve 200 com []: tratar como erro.
+          if ! grep -q '"ping"' resp.json; then
+            echo "::error::Nenhuma linha atualizada. Rode supabase/sql/heartbeat.sql no SQL Editor."
+            exit 1
+          fi
+
+          echo "Ping realizado com sucesso — projeto mantido ativo."
