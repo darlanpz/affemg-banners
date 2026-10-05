@@ -113,11 +113,12 @@ body {
 }
 @media (max-width: 820px) { .creator { grid-template-columns: 1fr; } }
 
-.controls { display: flex; flex-direction: column; gap: 18px; }
-.field {
-  border: 1px solid var(--line); border-radius: var(--radius-lg);
-  background: var(--white); padding: 24px; margin: 0;
+/* Um único painel visual: o formulário é o cartão, e os fieldsets são seções espaçadas em 32px (sem divisórias). */
+.controls {
+  display: flex; flex-direction: column; gap: 32px; padding: 24px;
+  border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--white);
 }
+.field { border: 0; background: transparent; padding: 0; margin: 0; min-width: 0; }
 /* Título dentro da caixa: legend flutuante ocupa a linha toda e o conteúdo vem abaixo. */
 .field legend {
   float: left; width: 100%; margin: 0 0 16px; padding: 0;

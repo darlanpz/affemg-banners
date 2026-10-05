@@ -115,14 +115,14 @@
   }
   var DESCRICOES = {
     '01': 'Exibir apenas a imagem de fundo',
-    '02': 'Aplicar uma textura da marca sobreposta',
+    '02': 'Aplicar uma textura sobreposta',
     padrao: 'Apenas a imagem, sem logo ou marca',
     cima: 'Logo AFFEMG centralizada no topo',
     direita: 'Logo AFFEMG no canto direito',
     vertical: 'Logo AFFEMG em composição vertical',
     vilamares: 'Marca Vila Mares, com sol e onda',
-    escurecer: 'Camada escura sobre a imagem para destacar o conteúdo',
-    footer: 'Desfoque e degradê escuro na parte de baixo',
+    escurecer: 'Camada escura para destacar o conteúdo',
+    footer: 'Desfoque na parte de baixo',
   };
 
   function cartaoTexto(nome, desc) {
