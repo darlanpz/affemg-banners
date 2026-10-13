@@ -1,13 +1,13 @@
 name: Keep Supabase alive
 
 # Evita que o projeto Supabase (plano grátis) seja pausado por inatividade.
-# Faz um ping leve no banco a cada 3 dias (e permite rodar manualmente).
+# Faz um ping leve no banco todo dia (e permite rodar manualmente).
 # Configure os secrets do repositório: SUPABASE_URL e SUPABASE_ANON_KEY
 # (Settings → Secrets and variables → Actions).
 
 on:
   schedule:
-    - cron: "0 6 */3 * *"   # a cada 3 dias, 06:00 UTC
+    - cron: "0 6 * * *"   # todo dia, 06:00 UTC
   workflow_dispatch: {}
 
 jobs:
@@ -61,5 +61,11 @@ jobs:
             echo "::error::Nenhuma linha atualizada. Rode supabase/sql/heartbeat.sql no SQL Editor."
             exit 1
           fi
+
+          # Também chama o serviço de Auth (tráfego além do REST). Não derruba o job se falhar.
+          auth_code=$(curl -sS -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 5 --max-time 30 \
+            "$CLEAN_URL/auth/v1/settings" -H "apikey: $SUPABASE_ANON_KEY") || auth_code="000"
+          echo "Auth settings: HTTP $auth_code"
+          [ "$auth_code" = "200" ] || echo "::warning::Chamada ao Auth retornou HTTP $auth_code."
 
           echo "Ping realizado com sucesso — projeto mantido ativo."

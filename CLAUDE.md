@@ -39,7 +39,7 @@ Idioma do projeto e da UI: português (pt-BR). Detalhes: `README.md` e `SUPABASE
 | `supabase/emails/` | Templates HTML dos e-mails do Auth |
 | `migrate-curated.js` | Migração única dos prontos de `banners/` para o Supabase |
 | `build.js` | **Legado**: gerou os WebP em `banners/` a partir de pasta do Drive |
-| `.github/workflows/keep-supabase-alive.yml` | Ping a cada 3 dias (evita pausa do plano grátis); secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY` |
+| `.github/workflows/keep-supabase-alive.yml` | Ping diário (REST + Auth) (evita pausa do plano grátis); secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY` |
 
 ## Permissões (garantidas por RLS no banco, não só na UI)
 

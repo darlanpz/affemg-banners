@@ -369,7 +369,7 @@ A senha fica só no ambiente durante a execução — **não** é gravada em nen
 
 O plano grátis **pausa o projeto após ~7 dias sem atividade**. Para evitar, este repositório já inclui
 um **GitHub Action agendado** (`.github/workflows/keep-supabase-alive.yml`) que faz um ping no banco
-a cada 3 dias.
+todo dia.
 
 Para ativar, no seu repositório do GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
 - `SUPABASE_URL` = a Project URL
